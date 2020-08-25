@@ -10,14 +10,18 @@ namespace io {
     class SoapyWrapper {
     public:
         SoapyWrapper() {
+            output = new dsp::stream<complex_t>(64000);
             SoapySDR::registerLogHandler(_logHandler);
-            output.init(64000);
             currentGains = new float[1];
             refresh();
             if (devList.size() == 0) {
                 return;
             }
             setDevice(devList[0]);
+        }
+
+        ~SoapyWrapper() {
+            delete output;
         }
 
         void start() {
@@ -118,7 +122,7 @@ namespace io {
         std::vector<SoapySDR::Range> gainRanges;
         float* currentGains;
 
-        dsp::stream<dsp::complex_t> output;
+        dsp::stream<dsp::complex_t> *output;
 
     private:
         static void _worker(SoapyWrapper* _this) {
