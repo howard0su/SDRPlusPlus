@@ -168,9 +168,9 @@ namespace dsp {
             complex_t* delayBuf = _this->delayBuf;
             int id = 0;
 
+            memset(outBuf, 0, outBufferLength);
             while (true) {
                 if (_this->_in->read(inBuf, blockSize) < 0) { break; };
-                memset(outBuf, 0, outBufferLength);
                 
                 for (int t = 0; t < tapCount; t++) {
                     tap = _this->_taps[t];
@@ -185,11 +185,11 @@ namespace dsp {
                         if (i < t) {
                             outBuf[id].i += tap * delayBuf[delayOff + i].i;
                             outBuf[id].q += tap * delayBuf[delayOff + i].q;
-                            id++;
-                            continue;
                         }
-                        outBuf[id].i += tap * inBuf[i - t].i;
-                        outBuf[id].q += tap * inBuf[i - t].q;
+                        else {
+                            outBuf[id].i += tap * inBuf[i - t].i;
+                            outBuf[id].q += tap * inBuf[i - t].q;
+                        }
                         id++;
                     }
                 }
