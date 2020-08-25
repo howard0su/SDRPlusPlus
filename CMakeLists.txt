@@ -7,6 +7,8 @@ project(sdrpp)
 
 option(HAS_VOLK "Use volk to do matrix multi" FALSE)
 option(HAS_SOAPY "Support SOAPY Sources" FALSE)
+option(HAS_RX888 "Support RX888" TRUE)
+
 if (MSVC)
     set(CMAKE_CXX_FLAGS "-O2 /std:c++17 /EHsc")
 
@@ -40,12 +42,20 @@ endif (MSVC)
 
 IF(HAS_VOLK)
     add_compile_definitions(-DHAS_VOLK)
-link_libraries(volk)
+    link_libraries(volk)
 ENDIF()
 
 IF(HAS_SOAPY)
     add_compile_definitions(-DHAS_SOAPY)
-link_libraries(SoapySDR)
+    link_libraries(SoapySDR)
+ENDIF()
+
+IF(HAS_RX888)
+    add_compile_definitions(-DHAS_RX888)
+
+    include_directories(sdrpp "src/io/CyAPI")
+    file(GLOB RX888 "src/io/CyAPI/*.cpp")
+
 ENDIF()
 
 # Main code
@@ -59,7 +69,7 @@ if (MSVC)
     set(SRC ${SRC} "win32/resources.rc")
 endif (MSVC)
 
-add_executable(sdrpp ${SRC} ${IMGUI})
+add_executable(sdrpp ${SRC} ${IMGUI} ${RX888})
 # add_library(sdrpp ${SRC} ${IMGUI})
 
 if (MSVC)
