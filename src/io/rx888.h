@@ -98,16 +98,24 @@ namespace io {
             txtDevList += "VHF";
             txtDevList += '\0';
 
+            devNameList.push_back("HF");
+            devNameList.push_back("VHF");
             devList.push_back((void*)1);
             devList.push_back((void*)2);
         }
 
         void setSampleRate(float sampleRate)
         {
+            _sampleRate = sampleRate; 
             _bandWidth = sampleRate;
             vfo.setOutputSampleRate(sampleRate);
             vfo.setBandwidth(sampleRate);
         }
+
+        float getSampleRate() {
+            return _sampleRate;
+        }
+
 
         void setFrequency(float freq)
         {
@@ -134,6 +142,7 @@ namespace io {
         }
 
         std::vector<void*> devList;
+        std::vector<std::string> devNameList;
         std::string txtDevList;
         std::vector<double> sampleRates;
         std::string txtSampleRateList;
@@ -221,7 +230,7 @@ namespace io {
         int samplerateidx = 0;
         int blockSize = 131072 / 2;
         float freqency = 16000000;
-        float _bandWidth;
+        float _bandWidth, _sampleRate;
 
         stream<complex_t> in;
         VFO vfo;
