@@ -2,7 +2,6 @@
 #include <thread>
 #include <dsp/stream.h>
 #include <dsp/types.h>
-#include <volk.h>
 
 namespace dsp {
     class SineSource {
