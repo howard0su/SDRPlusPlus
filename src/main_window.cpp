@@ -161,7 +161,7 @@ void windowInit() {
     fft_out = (fftwf_complex*) fftwf_malloc(sizeof(fftwf_complex) * fftSize);
     p = fftwf_plan_dft_1d(fftSize, fft_in, fft_out, FFTW_FORWARD, FFTW_ESTIMATE);
 
-    sigPath.init(sampleRate, 20, fftSize, &soapy.output, (dsp::complex_t*)fft_in, fftHandler);
+    sigPath.init(sampleRate, 20, fftSize, soapy.output, (dsp::complex_t*)fft_in, fftHandler);
     sigPath.start();
 
     vfoman::init(&wtf, &sigPath);
