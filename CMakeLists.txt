@@ -1,12 +1,27 @@
 cmake_minimum_required(VERSION 3.9)
+
+set(CMAKE_TOOLCHAIN_FILE ${CMAKE_CURRENT_SOURCE_DIR}/vcpkg/scripts/buildsystems/vcpkg.cmake
+  CACHE STRING "Vcpkg toolchain file")
+
 project(sdrpp)
 
+option(HAS_VOLK "Use volk to do matrix multi" FALSE)
+option(HAS_SOAPY "Support SOAPY Sources" FALSE)
 if (MSVC)
-    set(CMAKE_CXX_FLAGS "-O2 /std:c++17")
-    link_directories(sdrpp "C:/Program Files/PothosSDR/lib/")
+    set(CMAKE_CXX_FLAGS "-O2 /std:c++17 /EHsc")
+
+IF(HAS_VOLK)
     include_directories(sdrpp "C:/Program Files/PothosSDR/include/volk/")
+    link_directories(sdrpp "C:/Program Files/PothosSDR/lib/")
+ENDIF()
+
+IF(HAS_SOAPY)
     include_directories(sdrpp "C:/Program Files/PothosSDR/include/")
+    link_directories(sdrpp "C:/Program Files/PothosSDR/lib/")
+ENDIF()
+
     set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
+
 else()
     set(CMAKE_CXX_FLAGS "-O3 -std=c++17 -fpermissive -fsanitize=address -g")
     # set(CMAKE_CXX_FLAGS "-O3 -std=c++17 -fpermissive")
@@ -23,8 +38,15 @@ else()
     link_libraries(dl)
 endif (MSVC)
 
+IF(HAS_VOLK)
+    add_compile_definitions(-DHAS_VOLK)
 link_libraries(volk)
+ENDIF()
+
+IF(HAS_SOAPY)
+    add_compile_definitions(-DHAS_SOAPY)
 link_libraries(SoapySDR)
+ENDIF()
 
 # Main code
 include_directories(sdrpp "src/")
