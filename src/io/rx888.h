@@ -107,20 +107,19 @@ namespace io {
         void setSampleRate(float sampleRate)
         {
             _sampleRate = sampleRate; 
-            _bandWidth = sampleRate;
-            vfo.setOutputSampleRate(sampleRate);
-            vfo.setBandwidth(sampleRate);
+            _bandWidth = sampleRate / 2;
+            vfo.setOutputSampleRate(_sampleRate);
+            vfo.setBandwidth(_bandWidth);
         }
 
         float getSampleRate() {
             return _sampleRate;
         }
 
-
         void setFrequency(float freq)
         {
             freqency = freq;
-            vfo.setOffset(freq - ADC_FREQ / 4);
+            vfo.setOffset(freq);
         }
 
         void setGain(int gainId, float gain)
@@ -183,37 +182,14 @@ namespace io {
 				        WaitForSingleObject(inOvLap.hEvent, 5000);
 			        break;
 		        }
-#define DDC_LPF 
-
                 if (EndPt->Attributes == 2) { // BULK Endpoint
                     if (EndPt->FinishDataXfer((PUCHAR)buffer, rLen, &inOvLap, context)) {
-#ifdef DDC_LPF
-                    rLen = rLen / sizeof(unsigned short);
-                    for (int i = 0; i < rLen; i++)
-                    {
-                        switch(i & 0x03) {
-                        case 0:
-                            outbuf[i].i = (float)(buffer[i] - 32767)/65535.0;
-                            outbuf[i].q = 0.0f;
-                            break;
-                        case 1:
-                            outbuf[i].i = 0.0f;
-                            outbuf[i].q = -(float)(buffer[i] - 32767)/65535.0;
-                            break;
-                        case 2:
-                            outbuf[i].i = -(float)(buffer[i] - 32767)/65535.0;
-                            outbuf[i].q = 0.0f;
-                            break;
-                        case 3:
-                            outbuf[i].i = 0.0f;
-                            outbuf[i].q = (float)(buffer[i] - 32767)/65535.0;
-                            break;
+                        rLen = rLen / sizeof(unsigned short);
+                        for (int i = 0; i < rLen; i++)
+                        {
+                            outbuf[i].i = outbuf[i].q = (float)(buffer[i] - 32767)/65535.0f;
                         }
-                    }
-                    in.write(outbuf, rLen);
-#endif
-#ifdef DDC_BERCILE
-#endif
+                        in.write(outbuf, rLen);
                     }
                 }
 
@@ -230,7 +206,8 @@ namespace io {
         int samplerateidx = 0;
         int blockSize = 131072 / 2;
         float freqency = 16000000;
-        float _bandWidth, _sampleRate;
+        float _bandWidth = ADC_FREQ / 32;
+        float _sampleRate = ADC_FREQ / 16;
 
         stream<complex_t> in;
         VFO vfo;
