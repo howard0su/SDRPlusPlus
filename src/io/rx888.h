@@ -160,7 +160,7 @@ namespace io {
         void worker() {
             // block size 131072
             OVERLAPPED inOvLap;
-            auto buffer = new unsigned short[blockSize * 2];
+            auto buffer = new int16_t[blockSize * 2];
             auto outbuf = new complex_t[blockSize];
 
             long pktSize = EndPt->MaxPktSize;
@@ -187,7 +187,7 @@ namespace io {
                         rLen = rLen / sizeof(unsigned short);
                         for (int i = 0; i < rLen; i++)
                         {
-                            outbuf[i].i = outbuf[i].q = (float)(buffer[i] - 32767)/65535.0f;
+                            outbuf[i].i = outbuf[i].q = (float)(buffer[i])/32767.0f;
                         }
                         in.write(outbuf, rLen);
                     }
