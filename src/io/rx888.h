@@ -35,7 +35,7 @@ namespace io {
             currentGains = new float[1];
 
             in.init(64000);
-            vfo.init(&in, ADC_FREQ/2, ADC_FREQ/4, ADC_FREQ/4, 0, blockSize);
+            vfo.init(&in, ADC_FREQ, ADC_FREQ/4, ADC_FREQ/4, 0, blockSize);
             output = vfo.output;
             refresh();
             if (devList.size() == 0) {
