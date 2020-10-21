@@ -9,6 +9,7 @@ add_subdirectory("soapy")
 add_subdirectory("file_source")
 add_subdirectory("rtl_tcp_source")
 add_subdirectory("demo")
+add_subdirectory("rx888_source")
 
 if (MSVC)
     set(CMAKE_CXX_FLAGS "-O2 /std:c++17")
