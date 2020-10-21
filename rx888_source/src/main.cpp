@@ -11,7 +11,15 @@
 #include "openFX3.h"
 #include "Si5351.h"
 
-#define ADC_FREQ 100000000
+#define ADC_FREQ 4000000
+
+#define USE_FS_4 1
+
+#if USE_FS_4
+#define SAMPLE_RATE (ADC_FREQ/2)
+#else
+#define SAMPLE_RATE (ADC_FREQ)
+#endif
 
 ConfigManager config;
 
@@ -37,6 +45,7 @@ class RX888Module
 public:
     RX888Module(std::string name)
     {
+
         this->name = name;
         if (!openFX3())
         {
@@ -48,7 +57,7 @@ public:
         currentGains = new float[1];
 
         in.init(64000);
-        vfo.init(&in, ADC_FREQ / 2, ADC_FREQ / 2, ADC_FREQ / 2, 0, blockSize);
+        vfo.init(&in, SAMPLE_RATE, SAMPLE_RATE / 2, SAMPLE_RATE / 2, SAMPLE_RATE / 4, blockSize);
         output = vfo.output;
         refresh();
         if (devList.size() == 0)
@@ -89,8 +98,15 @@ public:
         spdlog::info("RX888MODULE '{0}': Instance deleted!", name);
     }
 
+#define SEL0 (8)  		//   SEL0  GPIO26
+#define SEL1 (16) 		//   SEL1  GPIO27
+
     void start()
     {
+        uint8_t Bgpio[2];
+        Bgpio[0] = 0x17 | SEL0 & (~SEL1);
+	    Bgpio[1] = 0x00;
+
         if (devList.size() == 0)
         {
             return;
@@ -102,9 +118,10 @@ public:
 
         // start device
         si5351aSetFrequency(ADC_FREQ, 0);
-        core::setInputSampleRate(ADC_FREQ/2);
+        core::setInputSampleRate(SAMPLE_RATE);
 
         vfo.start();
+        fx3Control(GPIOFX3, Bgpio);
 
         running = true;
         _workerThread = std::thread(_worker, this);
@@ -146,7 +163,7 @@ public:
     void setFrequency(float freq)
     {
         freqency = freq;
-        vfo.setOffset(freq - ADC_FREQ / 4);
+        vfo.setOffset(freq - SAMPLE_RATE / 4);
     }
 
     void setGain(int gainId, float gain)
@@ -219,15 +236,27 @@ private:
                 if (EndPt->FinishDataXfer((PUCHAR)buffer, rLen, &inOvLap, context))
                 {
                     rLen = rLen / sizeof(short);
-                    for (int i = 0; i < rLen / 2; i += 2)
+#if USE_FS_4
+                    int i;
+                    int k = 0;
+                    for (i = 0; i < rLen - 3;)
                     {
-                        
-                        outbuf[i].i = (float)buffer[i*2] / 32768.0f;
-                        outbuf[i].q = -(float)buffer[i*2 + 1] / 32768.0f;;
-                        outbuf[i + 1].i = -(float)buffer[i*2 + 2] / 32768.0f;;
-                        outbuf[i + 1].q = (float)buffer[i*2 + 3] / 32768.0f;;
+                        outbuf[k].i = (float)buffer[i*2] / 32768.0f;
+                        outbuf[k].q = -(float)buffer[i*2 + 1] / 32768.0f;;
+                        outbuf[k + 1].i = -(float)buffer[i*2 + 2] / 32768.0f;;
+                        outbuf[k + 1].q = (float)buffer[i*2 + 3] / 32768.0f;;
+                        k += 2;
+                        i += 4;
+                    }
+                    in.write(outbuf, k);
+#else
+                    for (int i = 0; i < rLen; i ++)
+                    {
+                        outbuf[i].q = (float)buffer[i] / 32768.0f;
+                        outbuf[i].i = 0;
                     }
                     in.write(outbuf, rLen);
+#endif
                 }
             }
 
