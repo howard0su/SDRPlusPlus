@@ -87,7 +87,7 @@ namespace dsp {
 
     class DemoMultiplier : public Block<DemoMultiplier, complex_t, complex_t, 2, 1> {
     public:
-        DemoMultiplier() : Block({2}, {1}, this, worker) {}
+        DemoMultiplier() : Block({2, 2}, {1}, this, worker) {}
 
         void init(stream<complex_t>* a, stream<complex_t>* b, int blockSize) {
             in[0] = a;
