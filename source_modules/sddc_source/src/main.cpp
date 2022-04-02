@@ -237,8 +237,14 @@ private:
         SDDCSourceModule* _this = (SDDCSourceModule*)ctx;
 
         if (data) {
-            memcpy(_this->stream.writeBuf, data, len * sizeof(float) * 2);
-            _this->stream.swap(len);
+            memcpy(&_this->stream.writeBuf[_this->sampleCount], data, len * sizeof(float) * 2);
+            _this->sampleCount += len;
+
+            if (_this->sampleCount >= _this->targetSampleCount)
+            {
+                _this->stream.swap(_this->sampleCount);
+                _this->sampleCount = 0;
+            }
         }
     }
 
@@ -258,6 +264,9 @@ private:
         SDDCSourceModule* _this = (SDDCSourceModule*)ctx;
         if (_this->running) { return; }
         if (_this->selectedDevName == "") { return; }
+
+        _this->sampleCount = 0;
+        _this->targetSampleCount = _this->getRatebyId(_this->srId) / 128;
 
         // Start device
         _this->RadioHandler.Start(_this->srId);
@@ -497,6 +506,9 @@ private:
     bool biasT;
 
     RadioHandlerClass RadioHandler;
+
+    uint32_t sampleCount;
+    uint32_t targetSampleCount;
 };
 
 MOD_EXPORT void _INIT_() {
