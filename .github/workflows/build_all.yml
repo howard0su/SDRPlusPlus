@@ -20,6 +20,10 @@ jobs:
         steps:
         - uses: actions/checkout@v4
         
+
+        - name: update vcpkg
+          run: cd c:\vcpkg ; git pull
+
         - name: Create Build Environment
           run: cmake -E make_directory ${{runner.workspace}}/build
 
