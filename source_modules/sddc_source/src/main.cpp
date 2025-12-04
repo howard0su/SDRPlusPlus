@@ -135,11 +135,10 @@ private:
         // define supported samplerates
         samplerates.clear();
         sampleRate = 64e6;
-        samplerates.define(sampleRate, getBandwdithScaled(sampleRate), sampleRate);
-        sampleRate = 32e6;
-        samplerates.define(sampleRate, getBandwdithScaled(sampleRate), sampleRate);
-        sampleRate = 16e6;
-        samplerates.define(sampleRate, getBandwdithScaled(sampleRate), sampleRate);
+        for (int i = 1; i <= 6; ++i) {
+            samplerates.define(sampleRate, getBandwdithScaled(sampleRate), sampleRate);
+            sampleRate /= 2;
+        }
 
         // Define the ports
         ports.clear();
@@ -237,13 +236,18 @@ private:
             return;
         }
 
+        uint32_t xtal_freq = sampleRate * 2;
+        if (sampleRate <= 32e6) {
+            xtal_freq = 64e6;
+        }
+
         // set HF or VHF first
         if (port == PORT_HF) {
             sddc_set_direct_sampling(openDev, 1);
             sddc_enable_bias_tee(openDev, bias ? 1 : 0);
 
             // Configure and start the DDC for decimation only
-            ddc.setInSamplerate(sampleRate * 2);
+            ddc.setInSamplerate(xtal_freq);
             ddc.setOutSamplerate(sampleRate, sampleRate);
             ddc.setOffset(freq);
             ddc.start();
@@ -255,7 +259,7 @@ private:
             sddc_set_center_freq64(openDev, (uint64_t)freq);
 
             // Configure and start the DDC for decimation only
-            ddc.setInSamplerate(sampleRate * 2);
+            ddc.setInSamplerate(xtal_freq);
             ddc.setOutSamplerate(sampleRate, sampleRate);
             ddc.setOffset(0.0);
             ddc.start();
@@ -273,7 +277,7 @@ private:
         ifGain = if_gain_max;
         rfGain = rf_gain_max;
 
-        sddc_set_xtal_freq(openDev, sampleRate * 2);
+        sddc_set_xtal_freq(openDev, xtal_freq);
         sddc_set_if_gain(openDev, ifGain);
         sddc_set_rf_gain(openDev, rfGain);
 
@@ -435,18 +439,21 @@ private:
 
     std::string name;
     bool enabled = true;
-    double sampleRate;
     SourceManager::SourceHandler handler;
     bool running = false;
     double freq;
 
     OptionList<std::string, int> devices;
-    OptionList<int, double> samplerates;
-    OptionList<std::string, Port> ports;
     int selectedDevId = 0;
+
+    OptionList<int, double> samplerates;
     int srId = 0;
+    double sampleRate;
+
+    OptionList<std::string, Port> ports;
     int portId = 0;
     Port port;
+
     int rfGain = 0;
     int ifGain = 0;
     std::string selectedSerial;
