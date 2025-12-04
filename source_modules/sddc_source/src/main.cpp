@@ -281,11 +281,10 @@ private:
         
         running = true;
 
-        uint32_t bufferSize = 16 * 1024 / 2;
+        bufferSize = 16 * 1024 / 2;
         
         fbuffer = dsp::buffer::alloc<float>(bufferSize);
         nullBuffer = dsp::buffer::alloc<float>(bufferSize);
-        bufferSize = bufferSize;
                    
         // Clear the null buffer
         dsp::buffer::clear(nullBuffer, bufferSize);
