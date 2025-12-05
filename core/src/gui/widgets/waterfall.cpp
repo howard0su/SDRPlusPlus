@@ -376,6 +376,7 @@ namespace ImGui {
             ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeEW);
             double deltax = drag.x - lastDrag;
             lastDrag = drag.x;
+            double oldLower = lowerFreq;
             double viewDelta = deltax * (viewBandwidth / (double)dataWidth);
 
             viewOffset -= viewDelta;
@@ -400,6 +401,15 @@ namespace ImGui {
             lowerFreq = (centerFreq + viewOffset) - (viewBandwidth / 2.0);
             upperFreq = (centerFreq + viewOffset) + (viewBandwidth / 2.0);
 
+            // Compute integer pixel shift that corresponds to the lower frequency change so existing
+            // waterfall rows can be translated horizontally and keep traces straight while panning.
+            if (waterfallVisible && waterfallFb != NULL) {
+                int pixelShift = (int)round((oldLower - lowerFreq) * ((double)dataWidth / viewBandwidth));
+                if (pixelShift != 0) {
+                    shiftWaterfallPixels(pixelShift);
+                }
+            }
+
             if (viewBandwidth != wholeBandwidth) {
                 updateAllVFOs();
                 if (_fullUpdate) { updateWaterfallFb(); };
@@ -409,6 +419,7 @@ namespace ImGui {
 
         // If the mouse wheel is moved on the frequency scale
         if (mouseWheel != 0 && mouseInFreq) {
+            double oldLower = lowerFreq;
             viewOffset -= (double)mouseWheel * viewBandwidth / 20.0;
 
             if (viewOffset + (viewBandwidth / 2.0) > wholeBandwidth / 2.0) {
@@ -427,6 +438,11 @@ namespace ImGui {
             lowerFreq = (centerFreq + viewOffset) - (viewBandwidth / 2.0);
             upperFreq = (centerFreq + viewOffset) + (viewBandwidth / 2.0);
 
+            if (waterfallVisible && waterfallFb != NULL) {
+                int pixelShift = (int)round((oldLower - lowerFreq) * ((double)dataWidth / viewBandwidth));
+                if (pixelShift != 0) { shiftWaterfallPixels(pixelShift); }
+            }
+
             if (viewBandwidth != wholeBandwidth) {
                 updateAllVFOs();
                 if (_fullUpdate) { updateWaterfallFb(); };
@@ -435,31 +451,39 @@ namespace ImGui {
         }
 
         // If the left and right keys are pressed while hovering the freq scale, move it too
-        bool leftKeyPressed = ImGui::IsKeyPressed(ImGuiKey_LeftArrow);
-        if ((leftKeyPressed || ImGui::IsKeyPressed(ImGuiKey_RightArrow)) && mouseInFreq) {
-            viewOffset += leftKeyPressed ? (viewBandwidth / 20.0) : (-viewBandwidth / 20.0);
+        {
+            bool leftKeyPressed = ImGui::IsKeyPressed(ImGuiKey_LeftArrow);
+            if ((leftKeyPressed || ImGui::IsKeyPressed(ImGuiKey_RightArrow)) && mouseInFreq) {
+                double oldLower = lowerFreq;
+                viewOffset += leftKeyPressed ? (viewBandwidth / 20.0) : (-viewBandwidth / 20.0);
 
-            if (viewOffset + (viewBandwidth / 2.0) > wholeBandwidth / 2.0) {
-                double freqOffset = (viewOffset + (viewBandwidth / 2.0)) - (wholeBandwidth / 2.0);
-                viewOffset = (wholeBandwidth / 2.0) - (viewBandwidth / 2.0);
-                centerFreq += freqOffset;
-                centerFreqMoved = true;
-            }
-            if (viewOffset - (viewBandwidth / 2.0) < -(wholeBandwidth / 2.0)) {
-                double freqOffset = (viewOffset - (viewBandwidth / 2.0)) + (wholeBandwidth / 2.0);
-                viewOffset = (viewBandwidth / 2.0) - (wholeBandwidth / 2.0);
-                centerFreq += freqOffset;
-                centerFreqMoved = true;
-            }
+                if (viewOffset + (viewBandwidth / 2.0) > wholeBandwidth / 2.0) {
+                    double freqOffset = (viewOffset + (viewBandwidth / 2.0)) - (wholeBandwidth / 2.0);
+                    viewOffset = (wholeBandwidth / 2.0) - (viewBandwidth / 2.0);
+                    centerFreq += freqOffset;
+                    centerFreqMoved = true;
+                }
+                if (viewOffset - (viewBandwidth / 2.0) < -(wholeBandwidth / 2.0)) {
+                    double freqOffset = (viewOffset - (viewBandwidth / 2.0)) + (wholeBandwidth / 2.0);
+                    viewOffset = (viewBandwidth / 2.0) - (wholeBandwidth / 2.0);
+                    centerFreq += freqOffset;
+                    centerFreqMoved = true;
+                }
 
-            lowerFreq = (centerFreq + viewOffset) - (viewBandwidth / 2.0);
-            upperFreq = (centerFreq + viewOffset) + (viewBandwidth / 2.0);
+                lowerFreq = (centerFreq + viewOffset) - (viewBandwidth / 2.0);
+                upperFreq = (centerFreq + viewOffset) + (viewBandwidth / 2.0);
 
-            if (viewBandwidth != wholeBandwidth) {
-                updateAllVFOs();
-                if (_fullUpdate) { updateWaterfallFb(); };
+                if (waterfallVisible && waterfallFb != NULL) {
+                    int pixelShift = (int)round((oldLower - lowerFreq) * ((double)dataWidth / viewBandwidth));
+                    if (pixelShift != 0) { shiftWaterfallPixels(pixelShift); }
+                }
+
+                if (viewBandwidth != wholeBandwidth) {
+                    updateAllVFOs();
+                    if (_fullUpdate) { updateWaterfallFb(); };
+                }
+                return;
             }
-            return;
         }
 
         // Finally, if nothing else was selected, just move the VFO
@@ -627,6 +651,45 @@ namespace ImGui {
             }
         }
         delete[] tempData;
+        waterfallUpdate = true;
+    }
+
+    void WaterFall::shiftWaterfallPixels(int pixelShift) {
+        if (!waterfallVisible || waterfallFb == NULL || pixelShift == 0) { return; }
+        int w = dataWidth;
+        int h = waterfallHeight;
+        // If shift bigger than width, just clear
+        if (abs(pixelShift) >= w) {
+            for (int i = 0; i < h; i++) {
+                for (int j = 0; j < w; j++) {
+                    waterfallFb[i * w + j] = (uint32_t)255 << 24;
+                }
+            }
+            waterfallUpdate = true;
+            return;
+        }
+
+        if (pixelShift > 0) {
+            // shift right
+            for (int i = 0; i < h; i++) {
+                uint32_t* row = &waterfallFb[i * w];
+                memmove(&row[pixelShift], row, (w - pixelShift) * sizeof(uint32_t));
+                for (int j = 0; j < pixelShift; j++) {
+                    row[j] = (uint32_t)255 << 24;
+                }
+            }
+        }
+        else if (pixelShift < 0) {
+            int s = -pixelShift;
+            // shift left
+            for (int i = 0; i < h; i++) {
+                uint32_t* row = &waterfallFb[i * w];
+                memmove(row, &row[s], (w - s) * sizeof(uint32_t));
+                for (int j = w - s; j < w; j++) {
+                    row[j] = (uint32_t)255 << 24;
+                }
+            }
+        }
         waterfallUpdate = true;
     }
 
