@@ -87,15 +87,17 @@ namespace dsp::channel {
         }
 
         inline int process(int count, const complex_t* in, complex_t* out) {
-            xlator.process(count, in, out);
-            if (!filterNeeded) {
-                return resamp.process(count, out, out);
+            if (_offset != 0.0) {
+                xlator.process(count, in, out);
+                in = out;
             }
-            count = resamp.process(count, out, out);
-            {
+                
+            count = resamp.process(count, in, out);
+            if (filterNeeded) {
                 std::lock_guard<std::mutex> lck(filterMtx);
                 filter.process(count, out, out);
             }
+
             return count;
         }
 
