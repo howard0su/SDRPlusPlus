@@ -7,10 +7,7 @@
 #include <utils/optionlist.h>
 #include <atomic>
 #include <assert.h>
-
-extern "C" {
 #include "libsddc.h"
-}
 
 SDRPP_MOD_INFO{
     /* Name:            */ "sddc_source",
@@ -24,6 +21,8 @@ ConfigManager config;
 
 #define CONCAT(a, b) ((std::string(a) + b).c_str())
 
+#define SDDC_ACCUMRATE_BUFFER_COUNT 120
+#define SDDC_BUFFER_SIZE (16 * 1024 / 2)
 
 class SDDCSourceModule : public ModuleManager::Instance {
 public:
@@ -286,8 +285,8 @@ private:
 
         sddc_read_async(openDev, &sddc_async_callback, this);
 
-        bufferSize = 900 * 1024 / 2;
-        lastBufferFill = 0;
+        bufferSize = SDDC_BUFFER_SIZE * SDDC_ACCUMRATE_BUFFER_COUNT;
+        buffercount = 0;
 
         // Start worker
         run = true;
@@ -426,20 +425,15 @@ private:
     static void sddc_async_callback(const int16_t* buffer, uint32_t count, void* ctx) {
         SDDCSourceModule* _this = (SDDCSourceModule*)ctx;
 
-        size_t spaceLeft = _this->bufferSize - _this->lastBufferFill;
-        size_t toCopy = std::min<size_t>(count, spaceLeft);
+        assert(SDDC_BUFFER_SIZE == count);
 
-        assert(_this->lastBufferFill + toCopy <= _this->bufferSize);
-
-        memcpy(_this->dataIn.writeBuf + _this->lastBufferFill, buffer, toCopy * sizeof(int16_t));
-        _this->lastBufferFill += toCopy;
-
+        memcpy(_this->dataIn.writeBuf + _this->buffercount * SDDC_BUFFER_SIZE, buffer, count * sizeof(int16_t));
+        
+        _this->buffercount++;
         // If buffer is full, swap and reset fill
-        if (_this->lastBufferFill == _this->bufferSize) {
+        if (_this->buffercount == SDDC_ACCUMRATE_BUFFER_COUNT) {
             _this->dataIn.swap(_this->bufferSize);
-            _this->lastBufferFill = count - toCopy;
-            if (_this->lastBufferFill > 0)
-                memcpy(_this->dataIn.writeBuf, buffer + toCopy, _this->lastBufferFill * sizeof(int16_t));
+            _this->buffercount = 0;
         }
     }
 
@@ -497,7 +491,7 @@ private:
     sddc_dev_t* openDev;
 
     int bufferSize;
-    size_t lastBufferFill;
+    int buffercount;
     std::thread workerThread;
     std::atomic<bool> run = false;
 
