@@ -8,16 +8,15 @@
 #include <atomic>
 #include <assert.h>
 
-extern "C"
-{
-    #include "libsddc.h"
+extern "C" {
+#include "libsddc.h"
 }
 
 SDRPP_MOD_INFO{
     /* Name:            */ "sddc_source",
     /* Description:     */ "SDDC Source Module",
-    /* Author:          */ "Ryzerth",
-    /* Version:         */ 0, 2, 0,
+    /* Author:          */ "Howard Su",
+    /* Version:         */ 1, 0, 0,
     /* Max instances    */ -1
 };
 
@@ -148,7 +147,7 @@ private:
         // Save serial number
         selectedSerial = serial;
         selectedDevId = id;
-        
+
         // some API needs the device specific information
         sddc_dev_t* dev;
         int err = sddc_open(&dev, selectedDevId);
@@ -265,6 +264,8 @@ private:
             ddc.start();
         }
 
+        sddc_set_xtal_freq(openDev, xtal_freq);
+        
         float min, max;
         sddc_get_rf_gain_range(openDev, &min, &max);
         rf_gain_max = max;
@@ -273,26 +274,26 @@ private:
         sddc_get_if_gain_range(openDev, &min, &max);
         if_gain_max = max;
         if_gain_min = min;
-        // ifGain = std::clamp<int>(ifGain, if_gain_min, if_gain_max);
-        ifGain = if_gain_max;
-        rfGain = rf_gain_max;
+        ifGain = std::clamp<int>(ifGain, if_gain_min, if_gain_max);
 
-        sddc_set_xtal_freq(openDev, xtal_freq);
         sddc_set_if_gain(openDev, ifGain);
+        float val;
+        sddc_get_if_gain(openDev, &val);
+        ifGain = (int)val;
         sddc_set_rf_gain(openDev, rfGain);
+        sddc_get_rf_gain(openDev, &val);
+        rfGain = (int)val;
 
         sddc_read_async(openDev, &sddc_async_callback, this);
-        
+
+        bufferSize = 900 * 1024 / 2;
+        lastBufferFill = 0;
+
+        // Start worker
+        run = true;
+        workerThread = std::thread(&SDDCSourceModule::sddc_convert_to_float, this);
+
         running = true;
-
-        bufferSize = 16 * 1024 / 2;
-        
-        fbuffer = dsp::buffer::alloc<float>(bufferSize);
-        nullBuffer = dsp::buffer::alloc<float>(bufferSize);
-                   
-        // Clear the null buffer
-        dsp::buffer::clear(nullBuffer, bufferSize);
-
         flog::info("SDDCSourceModule '{0}': Start!", name);
     }
 
@@ -306,17 +307,19 @@ private:
     void stop() {
         running = false;
 
+        run = false;
+
+        if (workerThread.joinable()) { workerThread.join(); }
+
+        dataIn.stopWriter();
         sddc_cancel_async(openDev);
+        dataIn.clearWriteStop();
 
         // Stop the DDC
         ddc.stop();
 
         // Close the device
         sddc_close(openDev);
-
-        // free the buffer
-        dsp::buffer::free(fbuffer);
-        dsp::buffer::free(nullBuffer);
 
         flog::info("SDDCSourceModule '{0}': Stop!", name);
     }
@@ -337,7 +340,7 @@ private:
 
     static void menuHandler(void* ctx) {
         SDDCSourceModule* _this = (SDDCSourceModule*)ctx;
-        
+
         if (_this->running) { SmGui::BeginDisabled(); }
 
         SmGui::FillWidth();
@@ -423,17 +426,50 @@ private:
     static void sddc_async_callback(const int16_t* buffer, uint32_t count, void* ctx) {
         SDDCSourceModule* _this = (SDDCSourceModule*)ctx;
 
-        assert(count <= _this->bufferSize);
+        size_t spaceLeft = _this->bufferSize - _this->lastBufferFill;
+        size_t toCopy = std::min<size_t>(count, spaceLeft);
 
-        // Convert the samples to float
-        volk_16i_s32f_convert_32f(_this->fbuffer, buffer, 32768.0f, count);
+        assert(_this->lastBufferFill + toCopy <= _this->bufferSize);
 
-        // Interleave into a complex value
-        volk_32f_x2_interleave_32fc((lv_32fc_t*)_this->ddcIn.writeBuf, _this->fbuffer, _this->nullBuffer, count);
-        
-        // Send samples to the DDC
-        if (!_this->ddcIn.swap(count)) { 
-            sddc_cancel_async(_this->openDev);
+        memcpy(_this->dataIn.writeBuf + _this->lastBufferFill, buffer, toCopy * sizeof(int16_t));
+        _this->lastBufferFill += toCopy;
+
+        // If buffer is full, swap and reset fill
+        if (_this->lastBufferFill == _this->bufferSize) {
+            _this->dataIn.swap(_this->bufferSize);
+            _this->lastBufferFill = count - toCopy;
+            if (_this->lastBufferFill > 0)
+                memcpy(_this->dataIn.writeBuf, buffer + toCopy, _this->lastBufferFill * sizeof(int16_t));
+        }
+    }
+
+    void sddc_convert_to_float() {
+        float* fbuffer;
+        float* nullBuffer;
+
+        fbuffer = dsp::buffer::alloc<float>(bufferSize);
+        nullBuffer = dsp::buffer::alloc<float>(bufferSize);
+
+        // Clear the null buffer
+        dsp::buffer::clear(nullBuffer, bufferSize);
+
+        while (run) {
+            int count = dataIn.read();
+            const int16_t* buffer = dataIn.readBuf;
+
+            // Convert the samples to float
+            volk_16i_s32f_convert_32f(fbuffer, dataIn.readBuf, 32768.0f, count);
+
+            // readBuf is not more needed
+            dataIn.flush();
+
+            // Interleave into a complex value
+            volk_32f_x2_interleave_32fc((lv_32fc_t*)ddcIn.writeBuf, fbuffer, nullBuffer, count);
+
+            // Send samples to the DDC
+            if (!ddcIn.swap(count)) {
+                break;
+            }
         }
     }
 
@@ -461,16 +497,16 @@ private:
     sddc_dev_t* openDev;
 
     int bufferSize;
+    size_t lastBufferFill;
+    std::thread workerThread;
     std::atomic<bool> run = false;
 
     bool bias;
     int rf_gain_min, rf_gain_max;
     int if_gain_min, if_gain_max;
 
-    float* fbuffer;
-    float* nullBuffer;
-
     dsp::stream<dsp::complex_t> ddcIn;
+    dsp::stream<int16_t> dataIn;
     dsp::channel::RxVFO ddc;
 };
 
