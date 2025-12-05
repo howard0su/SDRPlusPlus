@@ -24,6 +24,8 @@ ConfigManager config;
 #define SDDC_ACCUMRATE_BUFFER_COUNT 120
 #define SDDC_BUFFER_SIZE (16 * 1024 / 2)
 
+#define TUNER_IF_FREQUENCY 4570000.0
+
 class SDDCSourceModule : public ModuleManager::Instance {
 public:
     SDDCSourceModule(std::string name) {
@@ -267,7 +269,7 @@ private:
             // Configure and start the DDC for decimation only
             ddc.setInSamplerate(xtal_freq);
             ddc.setOutSamplerate(sampleRate, sampleRate);
-            ddc.setOffset(0.0);
+            ddc.setOffset(-TUNER_IF_FREQUENCY);
             ddc.start();
         }
 
@@ -390,6 +392,8 @@ private:
                 config.acquire();
                 config.conf["devices"][_this->selectedSerial]["port"] = _this->ports.key(_this->portId);
                 config.release(true);
+
+                _this->select(_this->selectedSerial);
             }
         }
 
