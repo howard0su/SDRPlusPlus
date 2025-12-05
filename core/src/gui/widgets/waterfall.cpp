@@ -693,6 +693,34 @@ namespace ImGui {
         waterfallUpdate = true;
     }
 
+    void WaterFall::resampleWaterfallForViewChange(double oldLower, double oldViewBandwidth, double newLower, double newViewBandwidth) {
+        if (!waterfallVisible || waterfallFb == NULL) { return; }
+        int w = dataWidth;
+        int h = waterfallHeight;
+
+        // Precompute mapping parameters: for each new pixel x, compute the corresponding old pixel index
+        double offsetPixels = (newLower - oldLower) * ((double)w / oldViewBandwidth);
+        double scale = (newViewBandwidth / oldViewBandwidth);
+
+        // Temporary buffer for a single row
+        uint32_t* tmpRow = (uint32_t*)malloc(sizeof(uint32_t) * w);
+        if (!tmpRow) { return; }
+
+        for (int i = 0; i < h; i++) {
+            uint32_t* oldRow = &waterfallFb[i * w];
+            for (int x = 0; x < w; x++) {
+                double oldIdx = offsetPixels + ((double)x * scale);
+                int idx = (int)round(oldIdx);
+                if (idx < 0) idx = 0;
+                if (idx >= w) idx = w - 1;
+                tmpRow[x] = oldRow[idx];
+            }
+            memcpy(oldRow, tmpRow, sizeof(uint32_t) * w);
+        }
+        free(tmpRow);
+        waterfallUpdate = true;
+    }
+
     void WaterFall::drawBandPlan() {
         int count = bandplan->bands.size();
         double horizScale = (double)dataWidth / viewBandwidth;
@@ -1053,9 +1081,21 @@ namespace ImGui {
     }
 
     void WaterFall::setCenterFrequency(double freq) {
+        double oldLower = lowerFreq;
         centerFreq = freq;
         lowerFreq = (centerFreq + viewOffset) - (viewBandwidth / 2.0);
         upperFreq = (centerFreq + viewOffset) + (viewBandwidth / 2.0);
+
+        if (_fullUpdate) {
+            updateWaterfallFb();
+        }
+        else {
+            if (waterfallVisible && waterfallFb != NULL && dataWidth > 0 && viewBandwidth > 0.0) {
+                int pixelShift = (int)round((oldLower - lowerFreq) * ((double)dataWidth / viewBandwidth));
+                if (pixelShift != 0) { shiftWaterfallPixels(pixelShift); }
+            }
+        }
+
         updateAllVFOs();
     }
 
@@ -1087,6 +1127,10 @@ namespace ImGui {
         if (bandWidth == viewBandwidth) {
             return;
         }
+
+        double oldViewBandwidth = viewBandwidth;
+        double oldLower = (centerFreq + viewOffset) - (viewBandwidth / 2.0);
+
         if (abs(viewOffset) + (bandWidth / 2.0) > wholeBandwidth / 2.0) {
             if (viewOffset < 0) {
                 viewOffset = (bandWidth / 2.0) - (wholeBandwidth / 2.0);
@@ -1099,7 +1143,16 @@ namespace ImGui {
         lowerFreq = (centerFreq + viewOffset) - (viewBandwidth / 2.0);
         upperFreq = (centerFreq + viewOffset) + (viewBandwidth / 2.0);
         range = findBestRange(bandWidth, maxHSteps);
-        if (_fullUpdate) { updateWaterfallFb(); };
+
+        // If _fullUpdate is enabled we keep existing behaviour (recompute from rawFFTs).
+        // Otherwise resample existing waterfall framebuffer using nearest-neighbour to preserve traces.
+        if (_fullUpdate) {
+            updateWaterfallFb();
+        }
+        else {
+            resampleWaterfallForViewChange(oldLower, oldViewBandwidth, lowerFreq, viewBandwidth);
+        }
+
         updateAllVFOs();
     }
 
@@ -1112,6 +1165,7 @@ namespace ImGui {
         if (offset == viewOffset) {
             return;
         }
+        double oldLower = lowerFreq;
         if (offset - (viewBandwidth / 2.0) < -(wholeBandwidth / 2.0)) {
             offset = (viewBandwidth / 2.0) - (wholeBandwidth / 2.0);
         }
@@ -1121,7 +1175,16 @@ namespace ImGui {
         viewOffset = offset;
         lowerFreq = (centerFreq + viewOffset) - (viewBandwidth / 2.0);
         upperFreq = (centerFreq + viewOffset) + (viewBandwidth / 2.0);
-        if (_fullUpdate) { updateWaterfallFb(); };
+        if (_fullUpdate) {
+            updateWaterfallFb();
+        }
+        else {
+            if (waterfallVisible && waterfallFb != NULL && dataWidth > 0 && viewBandwidth > 0.0) {
+                int pixelShift = (int)round((oldLower - lowerFreq) * ((double)dataWidth / viewBandwidth));
+                if (pixelShift != 0) { shiftWaterfallPixels(pixelShift); }
+            }
+        }
+
         updateAllVFOs();
     }
 

@@ -231,6 +231,7 @@ namespace ImGui {
         void updateAllVFOs(bool checkRedrawRequired = false);
         bool calculateVFOSignalInfo(float* fftLine, WaterfallVFO* vfo, float& strength, float& snr);
         void shiftWaterfallPixels(int pixelShift);
+        void resampleWaterfallForViewChange(double oldLower, double oldViewBandwidth, double newLower, double newViewBandwidth);
 
         bool waterfallUpdate = false;
 
