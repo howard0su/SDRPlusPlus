@@ -98,7 +98,7 @@ namespace dsp::channel {
             if (offset < 0)
                 offset = -offset;
 
-            offset = offset / _inSamplerate / 2.0f;
+            offset = offset / (_inSamplerate / 2.0f);
             // align to 1/4 of halfft
             int halfFft = _fftSize / 2;
             _mtunebin = int(offset * halfFft / 4) * 4;  // mtunebin step 4 bin  ?
