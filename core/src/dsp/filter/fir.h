@@ -33,7 +33,7 @@ namespace dsp::filter {
             std::lock_guard<std::recursive_mutex> lck(base_type::ctrlMtx);
             base_type::tempStop();
 
-            int oldTC = _taps.size;
+            unsigned int oldTC = _taps.size;
             _taps = taps;
 
             // Update start of buffer
