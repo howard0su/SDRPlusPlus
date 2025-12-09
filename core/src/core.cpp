@@ -67,6 +67,8 @@ int sdrpp_main(int argc, char* argv[]) {
     chdir(execPath.parent_path().string().c_str());
 #endif
 
+    fftwf_import_wisdom_from_filename("wisdom");
+
     // Define command line options and parse arguments
     core::args.defineAll();
     if (core::args.parse(argc, argv) < 0) { return -1; } 
@@ -415,6 +417,8 @@ int sdrpp_main(int argc, char* argv[]) {
     core::configManager.disableAutoSave();
     core::configManager.save();
 #endif
+
+    fftwf_export_wisdom_to_filename("wisdom");
 
     flog::info("Exiting successfully");
     return 0;
