@@ -93,7 +93,7 @@ namespace dsp::channel {
             std::lock_guard<std::recursive_mutex> lck(base_type::ctrlMtx);
             std::lock_guard<std::mutex> lck2(_filterMtx);
 
-            _lsb = offset > 0;
+            _lsb = offset < 0;
 
             if (offset < 0)
                 offset = -offset;
