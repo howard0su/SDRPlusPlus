@@ -3,6 +3,7 @@
 #include <fftw3.h>
 #include <cstring>
 #include <algorithm>
+#include <volk/volk.h>
 
 #include "kaiser.h"
 
@@ -51,7 +52,6 @@ namespace dsp::channel {
             // create each filters
             generateFreqFilters(gain);
 
-            decimate_count = 0;
 
             base_type::init(in);
         }
@@ -113,7 +113,6 @@ namespace dsp::channel {
             assert(base_type::_block_init);
             std::lock_guard<std::recursive_mutex> lck(base_type::ctrlMtx);
             base_type::tempStop();
-            decimate_count = 0;
             base_type::tempStart();
         }
 
@@ -240,40 +239,27 @@ namespace dsp::channel {
         }
 
     protected:
-        static void convert_float(const int16_t *input, float* output, int size)
+        static inline void convert_float(const int16_t *input, float* output, int count)
         {
-            for(int m = 0; m < size; m++)
-            {
-                output[m] = float(input[m]);
-            }
+            volk_16i_s32f_convert_32f(output, input, 1.0f, count);
         }
 
-        static void shift_freq(fftwf_complex* dest, const fftwf_complex* source1, const fftwf_complex* source2, int start, int end)
+        static inline void shift_freq(fftwf_complex* dest, const fftwf_complex* source1, const fftwf_complex* source2, int start, int end)
         {
-            for (int m = start; m < end; m++)
-            {
-                // besides circular shift, do complex multiplication with the lowpass filter's spectrum
-                dest[m][0] = source1[m][0] * source2[m][0] - source1[m][1] * source2[m][1];
-                dest[m][1] = source1[m][1] * source2[m][0] + source1[m][0] * source2[m][1];
-            }
+            // Use VOLK for complex multiplication
+            volk_32fc_x2_multiply_32fc((lv_32fc_t*)(dest + start), (lv_32fc_t*)(source1 + start), (lv_32fc_t*)(source2 + start), end - start);
         }
 
-        template<bool flip> static void copy(fftwf_complex* dest, const fftwf_complex* source, int count)
-        {
-            if (flip)
-            {
-                for (int i = 0; i < count; i++)
-                {
+        template <bool flip>
+        static inline void copy(fftwf_complex* dest, const fftwf_complex* source, int count) {
+            if constexpr (!flip) {
+                memcpy(dest, source, count * sizeof(fftwf_complex));
+            }
+            else {
+                // VOLK does not provide a direct function to negate imaginary part, so use a loop
+                for (int i = 0; i < count; i++) {
                     dest[i][0] = source[i][0];
                     dest[i][1] = -source[i][1];
-                }
-            }
-            else
-            {
-                for (int i = 0; i < count; i++)
-                {
-                    dest[i][0] = source[i][0];
-                    dest[i][1] = source[i][1];
                 }
             }
         }
@@ -362,7 +348,6 @@ private:
 
         float GainScale;
 
-        uint32_t decimate_count;
 
         fftwf_complex **filterHw;       // Hw complex to each decimation ratio
 
