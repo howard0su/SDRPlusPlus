@@ -63,7 +63,7 @@ public:
         config.release();
         select(devSerial);
 
-        sigpath::sourceManager.registerSource("SDDC", &handler);
+        sigpath::sourceManager.registerSource("RX-888", &handler);
     }
 
     ~SDDCSourceModule() {

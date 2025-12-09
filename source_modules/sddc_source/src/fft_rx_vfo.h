@@ -166,6 +166,9 @@ namespace dsp::channel {
                     fftwf_execute_dft_r2c(plan_t2f_r2c, ADCinTime + (3 * halfFft / 2) * k, ADCinFreq);
                     // result now in ADCinFreq[]
                     
+                    ADCinFreq[0][0] = 0.0f; // DC real part zero
+                    ADCinFreq[0][1] = 0.0f; // DC imag part zero
+
                     // circular shift (mixing in full bins) and low/bandpass filtering (complex multiplication)
                     {
                         // circular shift tune fs/2 first half array into inFreqTmp[]
