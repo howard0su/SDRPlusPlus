@@ -158,6 +158,20 @@ private:
             return;
         }
 
+        // determine the device type
+        char product[256];
+        sddc_get_usb_strings(dev, NULL, product, NULL);
+
+        float gainFactor = RX888_GAINFACTOR;
+        if (strstr(product, "RX888mk2")) {
+            gainFactor = RX888mk2_GAINFACTOR;
+        }
+        else if (strstr(product, "RX888")) {
+            gainFactor = RX888_GAINFACTOR;
+        }
+
+        ddc.setGainFactor(gainFactor);
+
         // Load default options
         port = PORT_HF;
         portId = ports.valueId(port);

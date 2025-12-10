@@ -27,7 +27,7 @@ namespace dsp::channel {
     class FFTRxVFO : public Processor<int16_t, complex_t> {
         using base_type = Processor<int16_t, complex_t>;
     public:
-        FFTRxVFO() {}
+        FFTRxVFO() : filterHw(nullptr) {}
 
         ~FFTRxVFO() override {
             if (!base_type::_block_init) { return; }
@@ -50,11 +50,33 @@ namespace dsp::channel {
             
             _mtunebin = fftSize / 2 / 4;
 
-            // create each filters
-            generateFreqFilters(gain);
+            int halfFft = fftSize / 2;
+            filterHw = (fftwf_complex**)fftwf_malloc(sizeof(fftwf_complex*)*NDECIDX);
+            for (int d = 0; d < NDECIDX; d++)
+            {
+                filterHw[d] = (fftwf_complex*)fftwf_malloc(sizeof(fftwf_complex)*halfFft);     // halfFft
+            }
 
+            ADCinTime = (float*)fftwf_malloc(1024 * 1024 * sizeof(float) + sizeof(float) * halfFft); // large enough buffer
+
+            ADCinFreq = (fftwf_complex*)fftwf_malloc(sizeof(fftwf_complex)*(halfFft + 1)); // 1024+1
+            inFreqTmp = (fftwf_complex*)fftwf_malloc(sizeof(fftwf_complex)*(halfFft));    // 1024
+
+            plan_t2f_r2c = fftwf_plan_dft_r2c_1d(2 * halfFft, ADCinTime, ADCinFreq, FFTW_MEASURE);
+            for (int d = 0; d < NDECIDX; d++)
+            {
+                plans_f2t_c2c[d] = fftwf_plan_dft_1d(mfftdim[d], inFreqTmp, inFreqTmp, FFTW_BACKWARD, FFTW_MEASURE);
+            }
+
+            // create each filters
+            generateFreqFilters(1.0f);
 
             base_type::init(in);
+        }
+
+        void setGainFactor(float gain) {
+            std::lock_guard<std::mutex> lck(_filterMtx);
+            generateFreqFilters(gain);
         }
 
         void setInSamplerate(double inSamplerate) {
@@ -258,10 +280,14 @@ namespace dsp::channel {
             volk_16i_s32f_convert_32f(output, input, 1.0f, count);
         }
 
-        static inline void shift_freq(fftwf_complex* dest, const fftwf_complex* source1, const fftwf_complex* source2, int start, int end)
-        {
+        static inline void shift_freq(fftwf_complex* dest, const fftwf_complex* source1, const fftwf_complex* source2, int start, int end) {
             // Use VOLK for complex multiplication
-            volk_32fc_x2_multiply_32fc((lv_32fc_t*)(dest + start), (lv_32fc_t*)(source1 + start), (lv_32fc_t*)(source2 + start), end - start);
+            // volk_32fc_x2_multiply_32fc((lv_32fc_t*)(dest + start), (lv_32fc_t*)(source1 + start), (lv_32fc_t*)(source2 + start), end - start);
+            for (int m = start; m < end; m++) {
+                // besides circular shift, do complex multiplication with the lowpass filter's spectrum
+                dest[m][0] = source1[m][0] * source2[m][0] - source1[m][1] * source2[m][1];
+                dest[m][1] = source1[m][1] * source2[m][0] + source1[m][0] * source2[m][1];
+            }
         }
 
         template <bool flip>
@@ -284,13 +310,8 @@ namespace dsp::channel {
 
             // filters
             fftwf_complex *pfilterht;       // time filter ht
-            pfilterht = (fftwf_complex*)fftwf_malloc(sizeof(fftwf_complex)*halfFft);     // halfFft
-            filterHw = (fftwf_complex**)fftwf_malloc(sizeof(fftwf_complex*)*NDECIDX);
-            for (int d = 0; d < NDECIDX; d++)
-            {
-                filterHw[d] = (fftwf_complex*)fftwf_malloc(sizeof(fftwf_complex)*halfFft);     // halfFft
-            }
 
+            pfilterht = (fftwf_complex*)fftwf_malloc(sizeof(fftwf_complex)*halfFft);     // halfFft
             filterplan_t2f_c2c = fftwf_plan_dft_1d(halfFft, pfilterht, filterHw[0], FFTW_FORWARD, FFTW_MEASURE);
             float *pht = new float[halfFft / 4 + 1];
             const float Astop = 120.0f;
@@ -321,17 +342,6 @@ namespace dsp::channel {
             delete[] pht;
             fftwf_destroy_plan(filterplan_t2f_c2c);
             fftwf_free(pfilterht);
-
-            ADCinTime = (float*)fftwf_malloc(1024 * 1024 * sizeof(float) + sizeof(float) * halfFft); // large enough buffer
-
-            ADCinFreq = (fftwf_complex*)fftwf_malloc(sizeof(fftwf_complex)*(halfFft + 1)); // 1024+1
-            inFreqTmp = (fftwf_complex*)fftwf_malloc(sizeof(fftwf_complex)*(halfFft));    // 1024
-
-            plan_t2f_r2c = fftwf_plan_dft_r2c_1d(2 * halfFft, ADCinTime, ADCinFreq, FFTW_MEASURE);
-            for (int d = 0; d < NDECIDX; d++)
-            {
-                plans_f2t_c2c[d] = fftwf_plan_dft_1d(mfftdim[d], inFreqTmp, inFreqTmp, FFTW_BACKWARD, FFTW_MEASURE);
-            }
         }
 
         void cleanup() {
