@@ -239,9 +239,7 @@ private:
         uint32_t xtal_freq = sampleRate * 2;
         if (sampleRate < 32e6) {
             xtal_freq = 64e6;
-            full_band_mode = false;
         } else {
-            full_band_mode = true;
             xtal_freq = sampleRate * 2;
         }
 
@@ -253,11 +251,7 @@ private:
             // Configure and start the DDC for decimation only
             ddc.setInSamplerate(xtal_freq);
             ddc.setOutSamplerate(sampleRate, sampleRate);
-            if (full_band_mode) {
-                ddc.setOffset(0.0);
-            } else {
-                ddc.setOffset(freq);
-            }
+            ddc.setOffset(freq);
             ddc.start();
         }
         else {
@@ -338,10 +332,6 @@ private:
         if (_this->running) {
             if (_this->port == PORT_VHF) {
                 sddc_set_center_freq64(_this->openDev, (uint64_t)freq);
-            }
-            else if (_this->full_band_mode) {
-                _this->ddc.setOffset(0.0);
-                freq = 0.0; // reject to change freq
             }
             else {
                 _this->ddc.setOffset(freq);
@@ -510,8 +500,6 @@ private:
     int buffercount;
     std::thread workerThread;
     std::atomic<bool> run = false;
-
-    bool full_band_mode;
 
     bool bias;
     int rf_gain_min, rf_gain_max;
