@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <volk/volk.h>
 
+#include "pffft/pf_mixer.h"
 #include "kaiser.h"
 
 #define NDECIDX 7 // Support decimation ratios: 2,4,8,16,32,64,128
@@ -101,12 +102,17 @@ namespace dsp::channel {
             offset = offset / (_inSamplerate / 2.0f);
             // align to 1/4 of halfft
             int halfFft = _fftSize / 2;
-            _mtunebin = int(offset * halfFft / 4) * 4;  // mtunebin step 4 bin  ?
-            // TODO: how to handle the small freq drift
-            // float delta = ((float)this->mtunebin  / halfFft) - offset;
-            // float ret = delta * getRatio(); // ret increases with higher decimation
+            _mtunebin = int(offset * halfFft / 4) * 4; // mtunebin step 4 bin  ?
+            // handle the small freq drift
+            float delta = ((float)_mtunebin / halfFft) - offset;
+            float fc = delta * mratio[_decimationIndex]; // ret increases with higher decimation
             // DbgPrintf("offset %f mtunebin %d delta %f (%f)\n", offset, this->mtunebin, delta, ret);
-            // return ret;
+            if (_lsb) fc = -fc;
+
+            if (this->fc != fc) {
+                stateFineTune = shift_limited_unroll_C_sse_init(fc, 0.0F);
+                this->fc = fc;
+            }
         }
 
         void reset() {
@@ -225,7 +231,12 @@ namespace dsp::channel {
                 memmove(ADCinTime, &ADCinTime[count - halfFft], sizeof(float) * halfFft);
             }
 
-            return out - origin_output;
+            int len = out - origin_output;
+            if (this->fc != 0.0f) {
+                shift_limited_unroll_C_sse_inp_c((complexf*)origin_output, len, &stateFineTune);
+            }
+
+            return len;
         }
 
         int run() {
@@ -373,7 +384,10 @@ private:
         int _decimationIndex; // the index of decimation, log of 2
         bool _lsb;
         int _mtunebin;
-        
+
+        float fc;
+        shift_limited_unroll_C_sse_data_t stateFineTune;
+
         std::mutex _filterMtx;
     };
 }
