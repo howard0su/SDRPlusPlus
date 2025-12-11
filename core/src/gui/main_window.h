@@ -59,7 +59,6 @@ private:
     bool showMenu = true;
     int tuningMode = tuner::TUNER_MODE_NORMAL;
     dsp::stream<dsp::complex_t> dummyStream;
-    bool demoWindow = false;
     int selectedWindow = 0;
 
     bool initComplete = false;

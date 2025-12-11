@@ -506,7 +506,6 @@ void MainWindow::draw() {
             ImGui::Text("Framerate: %.1f FPS", ImGui::GetIO().Framerate);
             ImGui::Text("Center Frequency: %.0f Hz", gui::waterfall.getCenterFrequency());
             ImGui::Text("Source name: %s", sourceName.c_str());
-            ImGui::Checkbox("Show demo window", &demoWindow);
             ImGui::Text("ImGui version: %s", ImGui::GetVersion());
 
             // ImGui::Checkbox("Bypass buffering", &sigpath::iqFrontEnd.inputBuffer.bypass);
@@ -666,10 +665,6 @@ void MainWindow::draw() {
 
     if (showCredits) {
         credits::show();
-    }
-
-    if (demoWindow) {
-        ImGui::ShowDemoWindow();
     }
 }
 
