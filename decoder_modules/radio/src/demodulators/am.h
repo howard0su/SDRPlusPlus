@@ -1,6 +1,6 @@
 #pragma once
 #include "../demod.h"
-#include <dsp/demod/am.h>
+#include <dsp/demod/sam.h>
 
 namespace demod {
     class AM : public Demodulator {
@@ -31,7 +31,15 @@ namespace demod {
             config->release();
 
             // Define structure
-            demod.init(input, carrierAgc ? dsp::demod::AM<dsp::stereo_t>::AGCMode::CARRIER : dsp::demod::AM<dsp::stereo_t>::AGCMode::AUDIO, bandwidth, agcAttack / getIFSampleRate(), agcDecay / getIFSampleRate(), 100.0 / getIFSampleRate(), getIFSampleRate());
+            demod.init(input,
+                       dsp::demod::SAM<dsp::stereo_t>::Mode::SAM_MODE,
+                       carrierAgc ? dsp::demod::SAM<dsp::stereo_t>::AGCMode::CARRIER : dsp::demod::SAM<dsp::stereo_t>::AGCMode::AUDIO,
+                       dsp::demod::SAM<dsp::stereo_t>::PLLSpeed::MEDIUM,
+                       bandwidth,
+                       agcAttack / getIFSampleRate(),
+                       agcDecay / getIFSampleRate(),
+                       100.0 / getIFSampleRate(),
+                       getIFSampleRate());
         }
 
         void start() { demod.start(); }
@@ -57,7 +65,7 @@ namespace demod {
                 _config->release(true);
             }
             if (ImGui::Checkbox(("Carrier AGC##_radio_am_carrier_agc_" + name).c_str(), &carrierAgc)) {
-                demod.setAGCMode(carrierAgc ? dsp::demod::AM<dsp::stereo_t>::AGCMode::CARRIER : dsp::demod::AM<dsp::stereo_t>::AGCMode::AUDIO);
+                demod.setAGCMode(carrierAgc ? dsp::demod::SAM<dsp::stereo_t>::AGCMode::CARRIER : dsp::demod::SAM<dsp::stereo_t>::AGCMode::AUDIO);
                 _config->acquire();
                 _config->conf[name][getName()]["carrierAgc"] = carrierAgc;
                 _config->release(true);
@@ -89,7 +97,7 @@ namespace demod {
         dsp::stream<dsp::stereo_t>* getOutput() { return &demod.out; }
 
     private:
-        dsp::demod::AM<dsp::stereo_t> demod;
+        dsp::demod::SAM<dsp::stereo_t> demod;
 
         ConfigManager* _config = NULL;
 
