@@ -27,12 +27,14 @@
 \******************************************************************************/
 
 #include "DataIO.h"
-#include "timer.h"
-#include "printf.h"
+//#include "timer.h"
+#include <stdio.h>
 
 #include <iomanip>
 #include <time.h>
 #include "sound/sound.h"
+
+using namespace std;
 
 /* Implementation *************************************************************/
 /******************************************************************************\

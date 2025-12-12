@@ -37,7 +37,7 @@
 # include "fdk_aac_codec.h"
 #endif
 
-#include <unistd.h>
+// #include <unistd.h>
 
 CAudioCodec::CAudioCodec():pFile(nullptr)
 {
@@ -46,8 +46,7 @@ CAudioCodec::CAudioCodec():pFile(nullptr)
 CAudioCodec::~CAudioCodec() {
 }
 
-vector<CAudioCodec*>
-CAudioCodec::CodecList;
+std::vector<CAudioCodec*> CAudioCodec::CodecList;
 
 int
 CAudioCodec::RefCount = 0;
@@ -120,30 +119,30 @@ CAudioCodec::Init(const CAudioParam&, int)
 void
 CAudioCodec::openFile(const CParameter& Parameters)
 {
-    if(pFile != nullptr) {
-        fclose(pFile);
-        pFile = nullptr;
-    }
-    string fn = fileName(Parameters);
-    pFile = fopen(fn.c_str(), "wb");
+    // if(pFile != nullptr) {
+    //     fclose(pFile);
+    //     pFile = nullptr;
+    // }
+    // string fn = fileName(Parameters);
+    // pFile = fopen(fn.c_str(), "wb");
 }
 
 void
-CAudioCodec::writeFile(const vector<uint8_t>& audio_frame)
+CAudioCodec::writeFile(const std::vector<uint8_t>& audio_frame)
 {
-    if (pFile!=nullptr)
-    {
-        size_t iNewFrL = size_t(audio_frame.size()) + 1;
-        fwrite(&iNewFrL, size_t(4), size_t(1), pFile);	// frame length
-        fwrite(&audio_frame[0], 1, iNewFrL, pFile);	// data
-        fflush(pFile);
-    }
+    // if (pFile!=nullptr)
+    // {
+    //     size_t iNewFrL = size_t(audio_frame.size()) + 1;
+    //     fwrite(&iNewFrL, size_t(4), size_t(1), pFile);	// frame length
+    //     fwrite(&audio_frame[0], 1, iNewFrL, pFile);	// data
+    //     fflush(pFile);
+    // }
 }
 
 void
 CAudioCodec::closeFile() {
-    if(pFile != nullptr) {
-        fclose(pFile);
-        pFile = nullptr;
-    }
+    // if(pFile != nullptr) {
+    //     fclose(pFile);
+    //     pFile = nullptr;
+    // }
 }

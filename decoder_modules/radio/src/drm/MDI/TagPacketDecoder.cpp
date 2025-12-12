@@ -46,6 +46,8 @@
 #include "../util/CRC.h"
 #include <iostream>
 
+using namespace std;
+
 CTagPacketDecoder::CTagPacketDecoder() : vecpTagItemDecoders(0),iSeqNumber(0xffff)
 {
 }

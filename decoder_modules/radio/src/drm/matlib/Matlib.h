@@ -31,7 +31,6 @@
 #include <cstdlib>
 #include <math.h>
 #include <complex>
-using namespace std;
 #include "../GlobalDefinitions.h"
 
 
@@ -112,7 +111,7 @@ template<class T> class			CMatlibMatrix;
 
 /* Here we can choose the precision of the Matlib calculations */
 typedef _REAL					CReal;
-typedef complex<CReal>			CComplex;
+typedef std::complex<CReal>			CComplex;
 typedef CMatlibVector<CReal>	CRealVector;
 typedef CMatlibVector<CComplex>	CComplexVector;
 typedef CMatlibMatrix<CReal>	CRealMatrix;

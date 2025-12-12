@@ -34,6 +34,8 @@
 #include <iomanip>
 //#include "util/LogPrint.h"
 
+using namespace std;
+
 #ifdef _WIN32
 # define PATH_SEPARATOR "\\"
 # define PATH_SEPARATORS "/\\"

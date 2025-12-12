@@ -26,16 +26,13 @@
  *
 \******************************************************************************/
 
-#ifdef HAVE_LIBFDK_AAC
-
-#include "DRM_main.h"
-#include "printf.h"
-
 #include "fdk_aac_codec.h"
 #include <FDK-AAC/aacenc_lib.h>
 #include <FDK-AAC/FDK_audio.h>
-#include "SDC.h"
+#include "SDC/SDC.h"
 #include <cstring>
+
+using namespace std;
 
 FdkAacCodec::FdkAacCodec() :
     hDecoder(nullptr), hEncoder(nullptr), bUsac(false), decode_buf()
@@ -289,8 +286,9 @@ FdkAacCodec::DecOpen(const CAudioParam& AudioParam, int& iAudioSampleRate)
         return true;
     }
 
-    drm_t *drm = &DRM_SHMEM->drm[(int) FROM_VOID_PARAM(TaskGetUserParam())];
-    drm->i_epoch = drm->i_samples = drm->i_tsamples = 0;
+    //UNDONE
+    // drm_t *drm = &DRM_SHMEM->drm[(int) FROM_VOID_PARAM(TaskGetUserParam())];
+    // drm->i_epoch = drm->i_samples = drm->i_tsamples = 0;
 
     iAudioSampleRate = iDefaultSampleRate;  // get from AudioParam if codec couldn't get it
     return true; // TODO
@@ -299,7 +297,7 @@ FdkAacCodec::DecOpen(const CAudioParam& AudioParam, int& iAudioSampleRate)
 CAudioCodec::EDecError FdkAacCodec::Decode(const vector<uint8_t>& audio_frame, uint8_t aac_crc_bits,
     CVector<_REAL>& left, CVector<_REAL>& right)
 {
-    drm_t *drm = &DRM_SHMEM->drm[(int) FROM_VOID_PARAM(TaskGetUserParam())];
+//     drm_t *drm = &DRM_SHMEM->drm[(int) FROM_VOID_PARAM(TaskGetUserParam())];
 
     writeFile(audio_frame);
     vector<uint8_t> data;
@@ -322,9 +320,7 @@ CAudioCodec::EDecError FdkAacCodec::Decode(const vector<uint8_t>& audio_frame, u
     }
     UINT bytesValid = bufferSize;
 
-    drm_next_task("FDK fill enter");
     AAC_DECODER_ERROR err = aacDecoder_Fill(hDecoder, &pData, &bufferSize, &bytesValid);
-    drm_next_task("FDK fill exit");
     if (err != AAC_DEC_OK) {
         cerr << "FDK fill failed " << int(err) << endl;
         return CAudioCodec::DECODER_ERROR_UNKNOWN;
@@ -383,9 +379,7 @@ CAudioCodec::EDecError FdkAacCodec::Decode(const vector<uint8_t>& audio_frame, u
     }
 
     memset(decode_buf, 0, sizeof(int16_t)*output_size);
-    drm_next_task("FDK decode enter");
     err = aacDecoder_DecodeFrame(hDecoder, decode_buf, output_size, 0);
-    drm_next_task("FDK decode exit");
 
     if (err == AAC_DEC_OK) {
         //double d = 0.0;
@@ -395,7 +389,8 @@ CAudioCodec::EDecError FdkAacCodec::Decode(const vector<uint8_t>& audio_frame, u
     }
     else if (err == AAC_DEC_PARSE_ERROR) {
         //cerr << "FDK Error parsing bitstream." << endl;
-        ext_send_msg(drm->rx_chan, false, "EXT annotate=3");
+        //UNDONE
+        // ext_send_msg(drm->rx_chan, false, "EXT annotate=3");
         //printf("err PARSE ");
         return CAudioCodec::DECODER_ERROR_UNKNOWN;
     }
@@ -409,7 +404,8 @@ CAudioCodec::EDecError FdkAacCodec::Decode(const vector<uint8_t>& audio_frame, u
     }
     else if (err == AAC_DEC_CRC_ERROR) {
         //cerr << "FDK CRC error." << endl;     // happens often with marginal signals
-        ext_send_msg(drm->rx_chan, false, "EXT annotate=1");
+        // UNDONE
+        // ext_send_msg(drm->rx_chan, false, "EXT annotate=1");
         //printf("err CRC ");
         return CAudioCodec::DECODER_ERROR_UNKNOWN;
     }
@@ -421,7 +417,8 @@ CAudioCodec::EDecError FdkAacCodec::Decode(const vector<uint8_t>& audio_frame, u
     }
     
     if (err != AAC_DEC_OK) {
-        ext_send_msg(drm->rx_chan, false, "EXT annotate=2");
+        // UNDONE
+        // ext_send_msg(drm->rx_chan, false, "EXT annotate=2");
         //printf("err 0x%x ", err);
         return CAudioCodec::DECODER_ERROR_UNKNOWN;
     }
@@ -725,4 +722,3 @@ FdkAacCodec::fileName(const CParameter& Parameters) const
     return ss.str();
 }
 
-#endif

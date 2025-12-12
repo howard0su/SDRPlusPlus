@@ -30,6 +30,7 @@
 #include <limits>
 #include "../matlib/MatlibSigProToolbox.h"
 
+using namespace std;
 
 /* Implementation *************************************************************/
 void CChannelEstimation::ProcessDataInternal(CParameter& Parameters)

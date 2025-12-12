@@ -32,7 +32,6 @@
 #include <iostream>
 #include <cstdlib>
 #include <cerrno>
-#include <sys/time.h>
 
 #ifdef _WIN32
 /* Always include winsock2.h before windows.h */
@@ -41,6 +40,7 @@
 # include <ws2tcpip.h>
 # include <windows.h>
 #else
+# include <sys/time.h>
 # include <netinet/in.h>
 # include <arpa/inet.h>
 /* Some defines needed for compatibility when using Linux, Darwin, ... */

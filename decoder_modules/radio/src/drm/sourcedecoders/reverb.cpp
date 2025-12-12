@@ -1,5 +1,6 @@
 #include "reverb.h"
 
+using namespace std;
 Reverb::Reverb()
 {
 

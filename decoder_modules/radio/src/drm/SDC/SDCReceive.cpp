@@ -35,6 +35,8 @@
 
 #include "SDC.h"
 
+using namespace std;
+
 CSDCReceive::~CSDCReceive(){}
 
 /* Implementation *************************************************************/

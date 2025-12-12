@@ -82,7 +82,7 @@ protected:
     std::string strtime(time_t);
 
     CParameter & Parameters;
-    ofstream File;
+    std::ofstream File;
     bool bLogActivated;
     bool bLogEnabled;
     bool bRxlEnabled;

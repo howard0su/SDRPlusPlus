@@ -40,6 +40,8 @@
 #include "../Parameter.h"
 #include <iostream>
 
+using namespace std;
+
 string CTagItemDecoderProTy::GetTagName(void) {return "*ptr";}
 void CTagItemDecoderProTy::DecodeTag(CVector<_BINARY>& vecbiTag, const int iLen)
 {

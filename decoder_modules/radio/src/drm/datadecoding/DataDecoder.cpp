@@ -26,12 +26,13 @@
  *
 \******************************************************************************/
 
-#include "DRM.h"
 #include "DataDecoder.h"
 #include "epgutil.h"
 #include "Journaline.h"
 #include "Experiment.h"
 #include <iostream>
+
+using namespace std;
 
 CDataDecoder::CDataDecoder ():iServPacketID (0), DoNotProcessData (true),
 	Journaline(*new CJournaline()),
@@ -238,9 +239,9 @@ CDataDecoder::ProcessDataInternal(CParameter & Parameters)
 				case AT_MOTSLIDESHOW:	/* MOTSlideshow */
 					/* Packet unit decoding */
 				    //printf("AT_MOTSLIDESHOW iPacketID=%d\n", iPacketID);
-		            DRM_msg_encoded(DRM_MSG_SERVICE, "drm_slideshow_status", (char *) "1");
-					MOTObject[iPacketID].
-						AddDataUnit(DataUnit[iPacketID].vecbiData);
+		            // TODO:
+					// DRM_msg_encoded(DRM_MSG_SERVICE, "drm_slideshow_status", (char *) "1");
+					MOTObject[iPacketID].AddDataUnit(DataUnit[iPacketID].vecbiData);
 					break;
 				case AT_EPG:	/* EPG */
 					/* Packet unit decoding */
@@ -334,18 +335,19 @@ CDataDecoder::DecodeEPG(const CParameter & Parameters)
 			fileName = NewObj.strName;
 		}
 
-		//string path = Parameters.GetDataDirectory("EPG") + fileName;
-		//mkdirs(path);
-        string path = "/tmp/kiwi.data/drm.ch"+ to_string(DRM_rx_chan()) +"_"+ fileName;
-		//cerr << "writing EPG file " << path << endl;
-		printf("DRM write EPG file <%s>\n", path.c_str());
-		FILE *f = fopen(path.c_str(), "wb");
-		if (f)
-		{
-			fwrite(&NewObj.Body.vecData.front(), 1,
-				   NewObj.Body.vecData.size(), f);
-			fclose(f);
-		}
+		//UNDONE
+		// //string path = Parameters.GetDataDirectory("EPG") + fileName;
+		// //mkdirs(path);
+        // string path = "/tmp/kiwi.data/drm.ch"+ to_string(DRM_rx_chan()) +"_"+ fileName;
+		// //cerr << "writing EPG file " << path << endl;
+		// printf("DRM write EPG file <%s>\n", path.c_str());
+		// FILE *f = fopen(path.c_str(), "wb");
+		// if (f)
+		// {
+		// 	fwrite(&NewObj.Body.vecData.front(), 1,
+		// 		   NewObj.Body.vecData.size(), f);
+		// 	fclose(f);
+		// }
 	}
 }
 

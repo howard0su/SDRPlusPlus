@@ -17,7 +17,7 @@ public:
 private:
     unsigned numChannels;
     unsigned superFrameSize;
-    deque<uint8_t> payload;
+    std::deque<uint8_t> payload;
     std::vector<unsigned> frameSize;
     std::vector<unsigned> borders;
 };

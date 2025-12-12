@@ -26,10 +26,9 @@
  *
 \******************************************************************************/
 
-#include <DRM_main.h>
 #include "AudioSourceDecoder.h"
-#include "printf.h"
-#include "timer.h"
+#include <stdio.h>
+// #include "timer.h"
 
 #include <iostream>
 #include <sstream>
@@ -41,12 +40,13 @@
 #else
 # include <sys/stat.h>
 # include <sys/types.h>
+# include <unistd.h>
 #endif
-#include <unistd.h>
 
 #include "../MSC/aacsuperframe.h"
 #include "../MSC/xheaacsuperframe.h"
 
+using namespace std;
 /* Implementation *************************************************************/
 
 CAudioSourceDecoder::CAudioSourceDecoder()
@@ -133,8 +133,6 @@ CAudioSourceDecoder::ProcessDataInternal(CParameter & Parameters)
         bool bCodecUpdated = false;
         bool bCurBlockFaulty = false; // just for Opus or any other codec with FEC
 
-        drm_next_task("superFrame");
-        
         if (bGoodValues)
         {
             CAudioCodec::EDecError eDecError;
@@ -160,31 +158,31 @@ CAudioSourceDecoder::ProcessDataInternal(CParameter & Parameters)
                         init_LPF = true;
                     }
                     
-                    drm_t *drm = &DRM_SHMEM->drm[(int) FROM_VOID_PARAM(TaskGetUserParam())];
-                    if (init_LPF || use_LPF != drm->use_LPF) {
-                        bool _20k = (outputSampleRate > 12000);
-                        int attn = (drm->dbgUs && drm->p_i[0])? drm->p_i[0] : 20;
-                        int hbw  = (drm->dbgUs && drm->p_i[1])? drm->p_i[1] : (_20k?  8000 : 5000);
-                        int stop = (drm->dbgUs && drm->p_i[2])? drm->p_i[2] : (_20k? 10125 : 6000);
+                    // drm_t *drm = &DRM_SHMEM->drm[(int) FROM_VOID_PARAM(TaskGetUserParam())];
+                    // if (init_LPF || use_LPF != drm->use_LPF) {
+                    //     bool _20k = (outputSampleRate > 12000);
+                    //     int attn = (drm->dbgUs && drm->p_i[0])? drm->p_i[0] : 20;
+                    //     int hbw  = (drm->dbgUs && drm->p_i[1])? drm->p_i[1] : (_20k?  8000 : 5000);
+                    //     int stop = (drm->dbgUs && drm->p_i[2])? drm->p_i[2] : (_20k? 10125 : 6000);
 
-                        // ntaps, scale, stopAttn, Fpass, Fstop, Fsr, dump
-                        lpfL.InitLPFilter(0, 1, attn, hbw, stop, inputSampleRate);
-                        lpfR.InitLPFilter(0, 1, attn, hbw, stop, inputSampleRate);
-                        use_LPF = drm->use_LPF;
-                        do_LPF = (drm->use_LPF && attn > 1);
-                        if (do_LPF)
-                            alt_printf("DRM LPF #frames=%d size=%d sr=%d|%d %d|%d|%d #taps=%d\n",
-                                num_frames, vecTempResBufInLeft.Size(), inputSampleRate, outputSampleRate,
-                                attn, hbw, stop, lpfL.m_NumTaps);
-                        else
-                            alt_printf("DRM LPF OFF\n");
-                        init_LPF = false;
-                    }
+                    //     // ntaps, scale, stopAttn, Fpass, Fstop, Fsr, dump
+                    //     lpfL.InitLPFilter(0, 1, attn, hbw, stop, inputSampleRate);
+                    //     lpfR.InitLPFilter(0, 1, attn, hbw, stop, inputSampleRate);
+                    //     use_LPF = drm->use_LPF;
+                    //     do_LPF = (drm->use_LPF && attn > 1);
+                    //     if (do_LPF)
+                    //         alt_printf("DRM LPF #frames=%d size=%d sr=%d|%d %d|%d|%d #taps=%d\n",
+                    //             num_frames, vecTempResBufInLeft.Size(), inputSampleRate, outputSampleRate,
+                    //             attn, hbw, stop, lpfL.m_NumTaps);
+                    //     else
+                    //         alt_printf("DRM LPF OFF\n");
+                    //     init_LPF = false;
+                    // }
 
-                    if (do_LPF) {
-                        lpfL.ProcessFilter(vecTempResBufInLeft.Size(), &vecTempResBufInLeft[0], &vecTempResBufInLeft[0]);
-                        lpfR.ProcessFilter(vecTempResBufInRight.Size(), &vecTempResBufInRight[0], &vecTempResBufInRight[0]);
-                    }
+                    // if (do_LPF) {
+                    //     lpfL.ProcessFilter(vecTempResBufInLeft.Size(), &vecTempResBufInLeft[0], &vecTempResBufInLeft[0]);
+                    //     lpfR.ProcessFilter(vecTempResBufInRight.Size(), &vecTempResBufInRight[0], &vecTempResBufInRight[0]);
+                    // }
                     ResampleObjL.Resample(vecTempResBufInLeft, vecTempResBufOutCurLeft);
                     ResampleObjR.Resample(vecTempResBufInRight, vecTempResBufOutCurRight);
                 } else {

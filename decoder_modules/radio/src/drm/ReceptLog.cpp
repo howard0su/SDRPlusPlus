@@ -32,6 +32,7 @@
 #include <iostream>
 #include "matlib/MatlibStdToolbox.h"
 
+using namespace std;
 /* implementation --------------------------------------------- */
 
 CReceptLog::CReceptLog(CParameter & p):Parameters(p), File(), bLogActivated(false),

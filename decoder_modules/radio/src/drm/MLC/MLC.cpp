@@ -26,7 +26,6 @@
  *
 \******************************************************************************/
 
-#include "DRM_main.h"
 #include "MLC.h"
 
 
@@ -231,7 +230,6 @@ void CMLCDecoder::ProcessDataInternal(CParameter&)
     {
         for (j = 0; j < iLevels; j++)
         {
-            drm_next_task("MLCDecoder-level");
             /* Metric ------------------------------------------------------- */
             if (k > 0)
                 bIteration = true;
@@ -252,7 +250,7 @@ void CMLCDecoder::ProcessDataInternal(CParameter&)
             /* Viterbi decoder ---------------------------------------------- */
             #define MEAS_VITERBI
             #ifdef MEAS_VITERBI
-                MEASURE_TIME("v", 3, rAccMetric = ViterbiDecoder[j].Decode(vecMetric, vecDecOutBits[j]));
+                rAccMetric = ViterbiDecoder[j].Decode(vecMetric, vecDecOutBits[j]);
             #else
                 rAccMetric = ViterbiDecoder[j].Decode(vecMetric, vecDecOutBits[j])
             #endif
@@ -284,7 +282,6 @@ void CMLCDecoder::ProcessDataInternal(CParameter&)
 
     if (iL[2] == 0)
     {
-        drm_next_task("MLCDecoder-departition-std");
         /* Standard departitioning */
         /* Protection level A (higher protected part) */
         for (j = 0; j < iLevels; j++)
@@ -318,7 +315,6 @@ void CMLCDecoder::ProcessDataInternal(CParameter&)
            hierarchical bits at the beginning, then append the rest */
         /* Hierarchical frame (always "iM[0][1]"). "iM[0][0]" is always "0" in
            this case */
-        drm_next_task("MLCDecoder-departition-special");
         for (i = 0; i < iM[0][1]; i++)
         {
             (*pvecOutputData)[iElementCounter] =
@@ -357,7 +353,6 @@ void CMLCDecoder::ProcessDataInternal(CParameter&)
 
     /* Energy dispersal ----------------------------------------------------- */
     /* VSPP is treated as a separate part for energy dispersal (7.2.2) */
-    drm_next_task("MLCDecoder-energy-dispersal");
     EnergyDisp.ProcessData(pvecOutputData);
 }
 

@@ -870,8 +870,8 @@ public:
     void GenerateRandomSerialNumber();
     void GenerateReceiverID();
     void ResetServicesStreams();
-    void GetActiveServices(set<int>& actServ);
-    void GetActiveStreams(set<int>& actStr);
+    void GetActiveServices(std::set<int>& actServ);
+    void GetActiveStreams(std::set<int>& actStr);
     void InitCellMapTable(const ERobMode eNewWaveMode,
                           const ESpecOcc eNewSpecOcc);
 
@@ -1056,7 +1056,7 @@ public:
     std::vector<CRxStatus> DataComponentStatus;
 
     /* information about services gathered from SDC, EPG and web schedules */
-    map<uint32_t,CServiceInformation> ServiceInformation;
+    std::map<uint32_t,CServiceInformation> ServiceInformation;
 
     /* These values are used to set input and output block sizes of some modules */
     int iNumBitsHierarchFrameTotal;

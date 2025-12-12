@@ -117,7 +117,7 @@ public:
 
     void SetSoundInterface(std::string);
     std::string GetSoundInterface() { return soundDevice; }
-    void Enumerate(std::vector<string>& names, std::vector<string>& descriptions);
+    void Enumerate(std::vector<std::string>& names, std::vector<std::string>& descriptions);
     void Stop();
 	std::string GetSoundInterfaceVersion() { return pSound->GetVersion(); }
 
@@ -192,7 +192,7 @@ public:
 
     void SetSoundInterface(std::string);
     std::string GetSoundInterface() { return soundDevice; }
-    void Enumerate(std::vector<string>& names, std::vector<string>& descriptions);
+    void Enumerate(std::vector<std::string>& names, std::vector<std::string>& descriptions);
     void Stop();
 	std::string GetSoundInterfaceVersion() { return pSound->GetVersion(); }
     void SetInChanSel(const EInChanSel eNS) {

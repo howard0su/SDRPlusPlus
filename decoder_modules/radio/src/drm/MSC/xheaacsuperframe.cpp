@@ -1,6 +1,5 @@
 #include "xheaacsuperframe.h"
 #include "../util/CRC.h"
-#include "printf.h"
 
 XHEAACSuperFrame::XHEAACSuperFrame():AudioSuperFrame(), numChannels(0), superFrameSize(0), payload(), frameSize(), borders()
 {    
@@ -9,7 +8,6 @@ XHEAACSuperFrame::XHEAACSuperFrame():AudioSuperFrame(), numChannels(0), superFra
 void
 XHEAACSuperFrame::init(const CAudioParam& audioParam, unsigned frameSize)
 {
-    printf("DRM xHE-AAC init\n");
     numChannels = audioParam.AM_MONO?1:2;
     superFrameSize = frameSize;
     payload.resize(0);
@@ -200,7 +198,6 @@ bool XHEAACSuperFrame::parse(CVectorEx<_BINARY>& asf)
         #endif
 
         if (payload.empty()) {
-            printf("DRM xHE-AAC payload UNDERRUN\n");
             return false;
         }
         audioFrame[i].push_back(payload.front());

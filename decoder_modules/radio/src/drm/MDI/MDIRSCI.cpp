@@ -49,6 +49,8 @@
 #include <iomanip>
 #include "MDIRSCI.h"
 
+using namespace std;
+
 /* Implementation *************************************************************/
 CDownstreamDI::CDownstreamDI() : iLogFraCnt(0), pDrmReceiver(nullptr),
 	bMDIOutEnabled(false), bMDIInEnabled(false),bIsRecording(false),

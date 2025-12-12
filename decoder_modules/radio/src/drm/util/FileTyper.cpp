@@ -66,11 +66,11 @@ FileTyper::type FileTyper::resolve(const string& str)
     else
         s = str.substr(0, n);
 
-    struct stat st;
-    int rv = stat(s.c_str(), &st);
-    if (rv == 0 && st.st_mode & S_IFIFO) {
-        return pipe;
-    }
+    // struct stat st;
+    // int rv = stat(s.c_str(), &st);
+    // if (rv == 0 && st.st_mode & S_IFIFO) {
+    //     return pipe;
+    // }
 
 #ifdef HAVE_LIBSNDFILE
     SF_INFO info;
