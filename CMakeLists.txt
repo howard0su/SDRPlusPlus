@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.13)
 project(sdrpp)
 
+include(CTest)
+
 # Backends
 option(OPT_BACKEND_GLFW "Use the GLFW backend" ON)
 option(OPT_BACKEND_ANDROID "Use the Android backend" OFF)
@@ -121,6 +123,9 @@ endif (ANDROID)
 
 # Core of SDR++
 add_subdirectory("core")
+
+# Unittests of SDR++
+add_subdirectory("tests")
 
 # Source modules
 
