@@ -113,10 +113,15 @@ namespace dsp::buffer {
             while (true) {
                 if (delay) {
                     memmove(buf, delayStart, delaySize);
-                    if constexpr (std::is_same_v<T, complex_t> || std::is_same_v<T, stereo_t>) {
+                    if constexpr (std::is_same_v<T, complex_t>) {
                         for (int i = 0; i < delayCount; i++) {
                             buf[i].re /= 10.0f;
                             buf[i].im /= 10.0f;
+                        }
+                    } else if constexpr (std::is_same_v<T, stereo_t>) {
+                        for (int i = 0; i < delayCount; i++) {
+                            buf[i].l /= 10.0f;
+                            buf[i].r /= 10.0f;
                         }
                     }
                 }
