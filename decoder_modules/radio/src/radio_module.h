@@ -180,7 +180,7 @@ private:
             _this->selectDemodByID(RADIO_DEMOD_WFM);
         }
         ImGui::NextColumn();
-        if (ImGui::RadioButton(CONCAT("AM##_", _this->name), _this->selectedDemodID == 2) && _this->selectedDemodID != 2) {
+        if (ImGui::RadioButton(CONCAT("SAM##_", _this->name), _this->selectedDemodID == 2) && _this->selectedDemodID != 2) {
             _this->selectDemodByID(RADIO_DEMOD_AM);
         }
         if (ImGui::RadioButton(CONCAT("DSB##_", _this->name), _this->selectedDemodID == 3) && _this->selectedDemodID != 3) {
