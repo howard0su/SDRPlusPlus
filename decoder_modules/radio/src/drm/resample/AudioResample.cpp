@@ -30,7 +30,7 @@
 
 #include "AudioResample.h"
 #include "ResampleFilter.h"
-#include "printf.h"
+#include <stdio.h>
 
 CAudioResample::CAudioResample()
 {

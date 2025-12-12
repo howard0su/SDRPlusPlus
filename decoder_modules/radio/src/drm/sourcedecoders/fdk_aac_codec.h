@@ -33,7 +33,7 @@
 #include <FDK-AAC/aacdecoder_lib.h>
 #include <FDK-AAC/aacenc_lib.h>
 
-#include "timer.h"
+// #include "timer.h"
 
 class FdkAacCodec : public CAudioCodec
 {

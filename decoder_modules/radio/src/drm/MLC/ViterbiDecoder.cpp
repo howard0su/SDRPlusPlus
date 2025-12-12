@@ -27,7 +27,6 @@
 \******************************************************************************/
 
 #include "ViterbiDecoder.h"
-#include "printf.h"
 
 /* Implementation *************************************************************/
 _REAL CViterbiDecoder::Decode(CVector<CDistance>& vecNewDistance,

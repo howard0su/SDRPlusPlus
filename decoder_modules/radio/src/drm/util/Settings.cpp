@@ -36,7 +36,7 @@
 \******************************************************************************/
 
 #include "Settings.h"
-#include "printf.h"
+#include <stdio.h>
 
 #include <fstream>
 #include <sstream>
@@ -570,7 +570,7 @@ CSettings::ParseArguments(int argc, char **argv)
 		cerr << "Unknown option '" << argv[i] << "' -- use '--help' for help"
 			<< endl;
 
-		kiwi_exit(1);
+		exit(1);
 	}
 }
 
@@ -658,7 +658,7 @@ CSettings::GetStringArgument(int argc, char **argv, int &i,
 		{
 			cerr << argv[0] << ": ";
 			cerr << "'" << strLongOpt << "' needs a string argument" << endl;
-			kiwi_exit(1);
+			exit(1);
 		}
 
 		strArg = argv[i];
@@ -682,7 +682,7 @@ CSettings::GetNumericArgument(int argc, char **argv, int &i,
 			cerr << argv[0] << ": ";
 			cerr << "'" << strLongOpt << "' needs a numeric argument between "
 				<< rRangeStart << " and " << rRangeStop << endl;
-			kiwi_exit(1);
+			exit(1);
 		}
 
 		char *p;
@@ -692,7 +692,7 @@ CSettings::GetNumericArgument(int argc, char **argv, int &i,
 			cerr << argv[0] << ": ";
 			cerr << "'" << strLongOpt << "' needs a numeric argument between "
 				<< rRangeStart << " and " << rRangeStop << endl;
-			kiwi_exit(1);
+			exit(1);
 		}
 
 		return true;

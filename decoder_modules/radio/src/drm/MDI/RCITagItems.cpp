@@ -39,6 +39,8 @@
 
 #include "RCITagItems.h"
 
+using namespace std;
+
 void CTagItemGeneratorCfre::GenTag(int iNewFreqkHz)
 {
 	/* Length: 4 bytes = 32 bits */

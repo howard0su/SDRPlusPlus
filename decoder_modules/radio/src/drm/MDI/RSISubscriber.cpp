@@ -35,6 +35,7 @@
 #include "../DRMReceiver.h"
 #include "TagPacketGenerator.h"
 
+using namespace std;
 
 CRSISubscriber::CRSISubscriber(CPacketSink *pSink) : pPacketSink(pSink),
 	cProfile(0), bNeedPft(false), fragment_size(0), pDRMReceiver(0),

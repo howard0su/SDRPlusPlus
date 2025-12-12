@@ -152,7 +152,7 @@ typedef unsigned long long uint64_t;
 
 /* Define type-specific information */
 #define SIZEOF__BYTE					8
-#define _MAXSHORT						std::numeric_limits<int16_t>::max()
+#define _MAXSHORT						SHRT_MAX
 #define _MAXREAL						((_REAL) 3.4e38) /* Max for float */
 
 #ifdef USE_ERASURE_FOR_FASTER_ACQ

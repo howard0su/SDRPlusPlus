@@ -34,8 +34,6 @@
 #include <queue>
 #include "util/Settings.h"
 
-using namespace std;
-
 class CScheduler
 {
 public:
@@ -46,8 +44,8 @@ public:
 	SEvent front(); // get next event 
 	SEvent pop(); // remove first event from queue
 private:
-	map<time_t,int> schedule; // map seconds from start of day to schedule event, frequency or -1 for off
-	queue<SEvent> events;
+	std::map<time_t,int> schedule; // map seconds from start of day to schedule event, frequency or -1 for off
+	std::queue<SEvent> events;
 	CIniFile iniFile;
 	bool testMode;
 	void fill();

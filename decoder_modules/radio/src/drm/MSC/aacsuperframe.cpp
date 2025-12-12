@@ -1,5 +1,4 @@
 #include "aacsuperframe.h"
-#include "printf.h"
 
 AACSuperFrame::AACSuperFrame():AudioSuperFrame (),
     lengthPartA(0), lengthPartB(0), superFrameDurationMilliseconds(0), headerBytes(0), aacCRC()

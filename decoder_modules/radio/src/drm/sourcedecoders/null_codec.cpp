@@ -29,6 +29,8 @@
 
 #include "null_codec.h"
 
+using namespace std;
+
 NullCodec::NullCodec()
 {
 }

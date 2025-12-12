@@ -31,7 +31,6 @@
  *
 \******************************************************************************/
 
-#include "DRM.h"
 #include "DABMOT.h"
 #include "../util/Utilities.h"
 #include <algorithm>
@@ -47,6 +46,8 @@
 # include <FreeImage.h>
 #endif
 #endif
+
+using namespace std;
 
 /* Implementation *************************************************************/
 ostream & operator<<(ostream & out, CDateAndTime & d)
@@ -627,13 +628,15 @@ CMOTDABDec::DeliverIfReady(TTransportID TransportID)
 		}
 		//cerr << o << endl;;
 		//ostringstream ss; ss << o << endl;
-		ofstream file;
-        string fn = "/tmp/kiwi.data/drm.ch"+ to_string(DRM_rx_chan()) +"_"+ o.strName;
-        printf("DRM write file <%s>\n", fn.c_str());
-		file.open(fn.c_str());
-		file.write((char*)&o.Body.vecData[0], o.Body.vecData.Size());
-		file.close();
-		DRM_msg_encoded(DRM_MSG_SLIDESHOW, "drm_slideshow_cb", (char *) o.strName.c_str());
+
+		// UNDONE
+		// ofstream file;
+        // string fn = "/tmp/kiwi.data/drm.ch"+ to_string(DRM_rx_chan()) +"_"+ o.strName;
+        // printf("DRM write file <%s>\n", fn.c_str());
+		// file.open(fn.c_str());
+		// file.write((char*)&o.Body.vecData[0], o.Body.vecData.Size());
+		// file.close();
+		// DRM_msg_encoded(DRM_MSG_SLIDESHOW, "drm_slideshow_cb", (char *) o.strName.c_str());
 	}
 }
 

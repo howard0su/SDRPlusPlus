@@ -34,7 +34,7 @@
 #include "util/FileTyper.h"
 #include "matlib/MatlibSigProToolbox.h"
 
-
+using namespace std;
 const static int SineTable[] = { 0, 1, 0, -1, 0 };
 
 

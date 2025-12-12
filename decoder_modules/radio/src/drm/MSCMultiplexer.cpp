@@ -50,6 +50,7 @@
 
 #include "MSCMultiplexer.h"
 
+using namespace std;
 
 /* Implementation *************************************************************/
 void CMSCDemultiplexer::ProcessDataInternal(CParameter&)
