@@ -161,6 +161,7 @@ public:
         RADIO_DEMOD_LSB,
         RADIO_DEMOD_RAW,
         RADIO_DEMOD_SAM,
+        RADIO_DEMOD_DRM,
         _RADIO_DEMOD_COUNT,
     };
 
@@ -173,7 +174,7 @@ private:
         float menuWidth = ImGui::GetContentRegionAvail().x;
         ImGui::BeginGroup();
 
-        ImGui::Columns(4, CONCAT("RadioModeColumns##_", _this->name), false);
+        ImGui::Columns(5, CONCAT("RadioModeColumns##_", _this->name), false);
         if (ImGui::RadioButton(CONCAT("AM##_", _this->name), _this->selectedDemodID == RADIO_DEMOD_AM) && _this->selectedDemodID != 2) {
             _this->selectDemodByID(RADIO_DEMOD_AM);
         }
@@ -204,6 +205,14 @@ private:
             _this->selectDemodByID(RADIO_DEMOD_CW);
         };
         ImGui::NextColumn();
+        if (ImGui::RadioButton(CONCAT("RAW##_", _this->name), _this->selectedDemodID == RADIO_DEMOD_RAW) && _this->selectedDemodID != RADIO_DEMOD_RAW) {
+            _this->selectDemodByID(RADIO_DEMOD_RAW);
+        };
+        if (ImGui::RadioButton(CONCAT("DRM##_", _this->name), _this->selectedDemodID == RADIO_DEMOD_DRM) && _this->selectedDemodID != RADIO_DEMOD_DRM) {
+            _this->selectDemodByID(RADIO_DEMOD_DRM);
+        };
+        ImGui::NextColumn();
+
         ImGui::Columns(1, CONCAT("EndRadioModeColumns##_", _this->name), false);
 
         ImGui::EndGroup();
@@ -298,6 +307,7 @@ private:
             case DemodID::RADIO_DEMOD_LSB:  demod = new demod::LSB(); break;
             case DemodID::RADIO_DEMOD_RAW:  demod = new demod::RAW(); break;
             case DemodID::RADIO_DEMOD_SAM:  demod = new demod::SAM(); break;
+            case DemodID::RADIO_DEMOD_DRM:  demod = new demod::DRM(); break;
             default:                        demod = NULL; break;
         }
         if (!demod) { return NULL; }
