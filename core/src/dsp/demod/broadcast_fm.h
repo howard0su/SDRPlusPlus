@@ -30,7 +30,6 @@ namespace dsp::demod {
             buffer::free(r);
             taps::free(pilotFirTaps);
             taps::free(audioFirTaps);
-            taps::free(deemphasisFirTaps);
         }
 
         virtual void init(stream<complex_t>* in, double deviation, double samplerate, bool stereo = true, bool lowPass = true, bool rdsOut = false) {
@@ -48,11 +47,8 @@ namespace dsp::demod {
             lprDelay.init(NULL, ((pilotFirTaps.size - 1) / 2) + 1);
             lmrDelay.init(NULL, ((pilotFirTaps.size - 1) / 2) + 1);
             audioFirTaps = taps::lowPass(16000.0, 2500.0, _samplerate);
-            deemphasisFirTaps = taps::lowPass(2120.0, 500.0, _samplerate);
             alFir.init(NULL, audioFirTaps);
             arFir.init(NULL, audioFirTaps);
-            alDeemphasisFir.init(NULL, deemphasisFirTaps);
-            arDeemphasisFir.init(NULL, deemphasisFirTaps);
             xlator.init(NULL, -57000.0, samplerate);
             rdsResamp.init(NULL, samplerate, 5000.0);
 
@@ -63,8 +59,6 @@ namespace dsp::demod {
             lprDelay.out.free();
             arFir.out.free();
             alFir.out.free();
-            alDeemphasisFir.out.free();
-            arDeemphasisFir.out.free();
             xlator.out.free();
             rdsResamp.out.free();
 
@@ -97,12 +91,8 @@ namespace dsp::demod {
 
             taps::free(audioFirTaps);
             audioFirTaps = taps::lowPass(16000.0, 2500.0, _samplerate);
-            taps::free(deemphasisFirTaps);
-            deemphasisFirTaps = taps::lowPass(2120.0, 500.0, _samplerate);
             alFir.setTaps(audioFirTaps);
             arFir.setTaps(audioFirTaps);
-            alDeemphasisFir.setTaps(deemphasisFirTaps);
-            arDeemphasisFir.setTaps(deemphasisFirTaps);
 
             xlator.setOffset(-57000.0, samplerate);
             rdsResamp.setInSamplerate(samplerate);
@@ -149,8 +139,6 @@ namespace dsp::demod {
             lmrDelay.reset();
             alFir.reset();
             arFir.reset();
-            alDeemphasisFir.reset();
-            arDeemphasisFir.reset();
             base_type::tempStart();
         }
 
@@ -199,10 +187,6 @@ namespace dsp::demod {
                     arFir.process(count, r, r);
                 }
 
-                // Apply de-emphasis
-                alDeemphasisFir.process(count, l, l);
-                arDeemphasisFir.process(count, r, r);
-
                 // Interleave into stereo
                 convert::LRToStereo::process(count, l, r, out);
             }
@@ -223,9 +207,6 @@ namespace dsp::demod {
                 if (_lowPass) {
                     alFir.process(count, demod.out.writeBuf, demod.out.writeBuf);
                 }
-
-                // Apply de-emphasis (use left filter for mono, reset right for next stereo session)
-                alDeemphasisFir.process(count, demod.out.writeBuf, demod.out.writeBuf);
 
                 // Interleave raw MPX to stereo
                 convert::LRToStereo::process(count, demod.out.writeBuf, demod.out.writeBuf, out);
@@ -269,9 +250,6 @@ namespace dsp::demod {
         tap<float> audioFirTaps;
         filter::FIR<float, float> arFir;
         filter::FIR<float, float> alFir;
-        tap<float> deemphasisFirTaps;
-        filter::FIR<float, float> alDeemphasisFir;
-        filter::FIR<float, float> arDeemphasisFir;
         multirate::RationalResampler<dsp::complex_t> rdsResamp;
 
         float* lmr;
