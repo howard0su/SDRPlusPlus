@@ -59,6 +59,12 @@ namespace demod {
             if (config->conf[name][getName()].contains("rdsRegion")) {
                 rdsRegionStr = config->conf[name][getName()]["rdsRegion"];
             }
+            if (config->conf[name][getName()].contains("multipathenabled")) {
+                multipathenabled = config->conf[name][getName()]["multipathenabled"];
+            }
+            if (config->conf[name][getName()].contains("multipathstages")) {
+                multipathstages = config->conf[name][getName()]["multipathstages"];
+            }
             _config->release(modified);
 
             // Load RDS region
@@ -72,7 +78,7 @@ namespace demod {
             }
 
             // Init DSP
-            demod.init(input, bandwidth / 2.0f, getIFSampleRate(), _stereo, _lowPass, _rds);
+            demod.init(input, bandwidth / 2.0f, getIFSampleRate(), _stereo, _lowPass, _rds, multipathenabled ? multipathstages : 0);
             rdsDemod.init(&demod.rdsOut, _rdsInfo);
             hs.init(&rdsDemod.out, rdsHandler, this);
             reshape.init(&rdsDemod.soft, 4096, (1187 / 30) - 4096);
@@ -100,6 +106,8 @@ namespace demod {
         }
 
         void showMenu() {
+            float menuWidth = ImGui::GetContentRegionAvail().x;
+
             if (ImGui::Checkbox(("Stereo##_radio_wfm_stereo_" + name).c_str(), &_stereo)) {
                 setStereo(_stereo);
                 _config->acquire();
@@ -119,6 +127,23 @@ namespace demod {
                 _config->release(true);
             }
 
+            // multuipath stages
+            if (ImGui::Checkbox(("Multipath Filter##_radio_multipath_ena_" + name).c_str(), &multipathenabled)) {
+                if (multipathenabled) {
+                    demod.setMultipathStages(multipathstages);
+                }
+                else {
+                    demod.setMultipathStages(0);
+                }
+            }
+            if (!multipathenabled) { style::beginDisabled(); }
+            ImGui::SameLine();
+            ImGui::SetNextItemWidth(menuWidth - ImGui::GetCursorPosX());
+            if (ImGui::SliderInt(("##_radio_multipath_stages_" + name).c_str(), &multipathstages, 8, 32, "%d Stages")) {
+                demod.setMultipathStages(multipathstages);
+            }
+            if (!multipathenabled) { style::endDisabled(); }
+
             // TODO: This might break when the entire radio module is disabled
             if (!_rds) { ImGui::BeginDisabled(); }
             if (ImGui::Checkbox(("Advanced RDS Info##_radio_wfm_rds_info_" + name).c_str(), &_rdsInfo)) {
@@ -136,8 +161,6 @@ namespace demod {
                 _config->release(true);
             }
             if (!_rds) { ImGui::EndDisabled(); }
-
-            float menuWidth = ImGui::GetContentRegionAvail().x;
 
             if (_rds && _rdsInfo) {
                 ImGui::BeginTable(("##radio_wfm_rds_info_tbl_" + name).c_str(), 2, ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders);
@@ -356,6 +379,8 @@ namespace demod {
         bool _rdsInfo = false;
         float muGain = 0.01;
         float omegaGain = (0.01*0.01)/4.0;
+        int multipathstages = 16;
+        bool multipathenabled = true;
 
         int rdsRegionId = 0;
         RDSRegion rdsRegion = RDS_REGION_EUROPE;

@@ -3,6 +3,7 @@
 #include "../taps/low_pass.h"
 #include "../taps/band_pass.h"
 #include "../filter/fir.h"
+#include "../filter/multipath_fir.h"
 #include "../loop/pll.h"
 #include "../convert/l_r_to_stereo.h"
 #include "../convert/real_to_complex.h"
@@ -20,7 +21,7 @@ namespace dsp::demod {
     public:
         BroadcastFM() {}
 
-        BroadcastFM(stream<complex_t>* in, double deviation, double samplerate, bool stereo = true, bool lowPass = true, bool rdsOut = false) { init(in, deviation, samplerate, stereo, lowPass); }
+        BroadcastFM(stream<complex_t>* in, double deviation, double samplerate, bool stereo = true, bool lowPass = true, bool rdsOut = false, unsigned int multipathStages = 8) { init(in, deviation, samplerate, stereo, lowPass, rdsOut, multipathStages); }
 
         ~BroadcastFM() {
             if (!base_type::_block_init) { return; }
@@ -32,12 +33,13 @@ namespace dsp::demod {
             taps::free(audioFirTaps);
         }
 
-        virtual void init(stream<complex_t>* in, double deviation, double samplerate, bool stereo = true, bool lowPass = true, bool rdsOut = false) {
+        virtual void init(stream<complex_t>* in, double deviation, double samplerate, bool stereo = true, bool lowPass = true, bool rdsOut = false, unsigned int multipathStages = 0) {
             _deviation = deviation;
             _samplerate = samplerate;
             _stereo = stereo;
             _lowPass = lowPass;
             _rdsOut = rdsOut;
+            _multipathStages = multipathStages;
             
             demod.init(NULL, _deviation, _samplerate);
             pilotFirTaps = taps::bandPass<complex_t>(18750.0, 19250.0, 1000.0, _samplerate, true);
@@ -51,6 +53,9 @@ namespace dsp::demod {
             arFir.init(NULL, audioFirTaps);
             xlator.init(NULL, -57000.0, samplerate);
             rdsResamp.init(NULL, samplerate, 5000.0);
+            if (_multipathStages > 0) {
+                multipathFir.init(NULL, _multipathStages);
+            }
 
             lmr = buffer::alloc<float>(STREAM_BUFFER_SIZE);
             l = buffer::alloc<float>(STREAM_BUFFER_SIZE);
@@ -128,6 +133,18 @@ namespace dsp::demod {
             base_type::tempStart();
         }
 
+        void setMultipathStages(unsigned int stages) {
+            assert(base_type::_block_init);
+            std::lock_guard<std::recursive_mutex> lck(base_type::ctrlMtx);
+            base_type::tempStop();
+            _multipathStages = stages;
+            if (_multipathStages > 0) {
+                multipathFir.setStages(_multipathStages);
+                multipathFir.reset();
+            }
+            base_type::tempStart();
+        }
+
         void reset() {
             assert(base_type::_block_init);
             std::lock_guard<std::recursive_mutex> lck(base_type::ctrlMtx);
@@ -139,10 +156,14 @@ namespace dsp::demod {
             lmrDelay.reset();
             alFir.reset();
             arFir.reset();
+            multipathFir.reset();
             base_type::tempStart();
         }
 
         inline int process(int count, complex_t* in, stereo_t* out, int& rdsOutCount, complex_t* rdsout = NULL) {
+            if (_multipathStages > 0) {
+                multipathFir.process(count, in, in);
+            }
             // Demodulate
             demod.process(count, in, demod.out.writeBuf);
             if (_stereo) {
@@ -251,10 +272,11 @@ namespace dsp::demod {
         filter::FIR<float, float> arFir;
         filter::FIR<float, float> alFir;
         multirate::RationalResampler<dsp::complex_t> rdsResamp;
+        filter::MultipathFIR multipathFir;
+        unsigned int _multipathStages = 0;
 
         float* lmr;
         float* l;
         float* r;
-        
     };
 }
