@@ -90,12 +90,7 @@
 
 
 /* Define the application specific data-types ------------------------------- */
-#ifdef KIWISDR
-    typedef	float						_REAL;
-#else
-    typedef	double						_REAL;
-#endif
-
+typedef	float						    _REAL;
 typedef	std::complex<_REAL>				_COMPLEX;
 typedef short							_SAMPLE;
 typedef unsigned char					_BYTE;
@@ -203,7 +198,7 @@ enum ERobMode {RM_ROBUSTNESS_MODE_A, RM_ROBUSTNESS_MODE_B,
 
 
 /* Constants ---------------------------------------------------------------- */
-const _REAL crPi = M_PI;
+const _REAL crPi = (_REAL)M_PI;
 
 
 #define S9_DBUV 34.0 /* S9 in dBuV for converting HamLib S-meter readings to RSCI format */

@@ -77,7 +77,6 @@ CParameter::CParameter():
     rFreqOffsetTrack(0.0),
     rResampleOffset(0.0),
     iTimingOffsTrack(0),
-    eReceiverMode(RM_NONE),
     eAcquiState(AS_NO_SIGNAL),
     iNumAudioFrames(0),
     vecbiAudioFrameStatus(0),
@@ -189,7 +188,6 @@ CParameter::CParameter(const CParameter& p):
     rFreqOffsetTrack(p.rFreqOffsetTrack),
     rResampleOffset(p.rResampleOffset),
     iTimingOffsTrack(p.iTimingOffsTrack),
-    eReceiverMode(p.eReceiverMode),
     eAcquiState(p.eAcquiState),
     iNumAudioFrames(p.iNumAudioFrames),
     vecbiAudioFrameStatus(p.vecbiAudioFrameStatus),
@@ -296,7 +294,6 @@ CParameter& CParameter::operator=(const CParameter& p)
     rFreqOffsetTrack = p.rFreqOffsetTrack;
     rResampleOffset = p.rResampleOffset;
     iTimingOffsTrack = p.iTimingOffsTrack;
-    eReceiverMode = p.eReceiverMode;
     eAcquiState = p.eAcquiState;
     iNumAudioFrames = p.iNumAudioFrames;
     vecbiAudioFrameStatus = p.vecbiAudioFrameStatus;
@@ -370,94 +367,62 @@ CParameter& CParameter::operator=(const CParameter& p)
 void CParameter::SetReceiver(CDRMReceiver* pDRMReceiver)
 {
 	pDRMRec = pDRMReceiver;
-    if (pDRMRec)
-        eReceiverMode = pDRMRec->GetReceiverMode();
 }
 
 void CParameter::ResetServicesStreams()
 {
     int i;
-    if (GetReceiverMode() == RM_DRM)
+
+    /* Store informations about last service selected
+        * so the current service can be selected automatically after a resync */
+
+    if (iCurSelAudioService > 0)
+        LastAudioService.Save(iCurSelAudioService, Service[iCurSelAudioService].iServiceID);
+
+    if (iCurSelDataService > 0)
+        LastDataService.Save(iCurSelDataService, Service[iCurSelDataService].iServiceID);
+
+    /* Reset everything to possible start values */
+    for (i = 0; i < MAX_NUM_SERVICES; i++)
     {
+        Service[i].AudioParam.strTextMessage = "";
+        Service[i].AudioParam.iStreamID = STREAM_ID_NOT_USED;
+        Service[i].AudioParam.eAudioCoding = CAudioParam::AC_NONE;
+        Service[i].AudioParam.eSBRFlag = CAudioParam::SBR_NOT_USED;
+        Service[i].AudioParam.eAudioSamplRate = CAudioParam::AS_24KHZ;
+        Service[i].AudioParam.bTextflag = false;
+        Service[i].AudioParam.bEnhanceFlag = false;
+        Service[i].AudioParam.eAudioMode = CAudioParam::AM_MONO;
+        Service[i].AudioParam.eSurround = CAudioParam::MS_NONE;
+        Service[i].AudioParam.xHE_AAC_config.clear();
 
-        /* Store informations about last service selected
-         * so the current service can be selected automatically after a resync */
+        Service[i].DataParam.iStreamID = STREAM_ID_NOT_USED;
+        Service[i].DataParam.ePacketModInd = CDataParam::PM_PACKET_MODE;
+        Service[i].DataParam.eDataUnitInd = CDataParam::DU_SINGLE_PACKETS;
+        Service[i].DataParam.iPacketID = 0;
+        Service[i].DataParam.iPacketLen = 0;
+        Service[i].DataParam.eAppDomain = CDataParam::AD_DRM_SPEC_APP;
+        Service[i].DataParam.iUserAppIdent = 0;
 
-        if (iCurSelAudioService > 0)
-            LastAudioService.Save(iCurSelAudioService, Service[iCurSelAudioService].iServiceID);
-
-        if (iCurSelDataService > 0)
-            LastDataService.Save(iCurSelDataService, Service[iCurSelDataService].iServiceID);
-
-        /* Reset everything to possible start values */
-        for (i = 0; i < MAX_NUM_SERVICES; i++)
-        {
-            Service[i].AudioParam.strTextMessage = "";
-            Service[i].AudioParam.iStreamID = STREAM_ID_NOT_USED;
-            Service[i].AudioParam.eAudioCoding = CAudioParam::AC_NONE;
-            Service[i].AudioParam.eSBRFlag = CAudioParam::SBR_NOT_USED;
-            Service[i].AudioParam.eAudioSamplRate = CAudioParam::AS_24KHZ;
-            Service[i].AudioParam.bTextflag = false;
-            Service[i].AudioParam.bEnhanceFlag = false;
-            Service[i].AudioParam.eAudioMode = CAudioParam::AM_MONO;
-            Service[i].AudioParam.eSurround = CAudioParam::MS_NONE;
-            Service[i].AudioParam.xHE_AAC_config.clear();
-
-            Service[i].DataParam.iStreamID = STREAM_ID_NOT_USED;
-            Service[i].DataParam.ePacketModInd = CDataParam::PM_PACKET_MODE;
-            Service[i].DataParam.eDataUnitInd = CDataParam::DU_SINGLE_PACKETS;
-            Service[i].DataParam.iPacketID = 0;
-            Service[i].DataParam.iPacketLen = 0;
-            Service[i].DataParam.eAppDomain = CDataParam::AD_DRM_SPEC_APP;
-            Service[i].DataParam.iUserAppIdent = 0;
-
-            Service[i].iServiceID = SERV_ID_NOT_USED;
-            Service[i].eCAIndication = CService::CA_NOT_USED;
-            Service[i].iLanguage = 0;
-            Service[i].strCountryCode = "";
-            Service[i].strLanguageCode = "";
-            Service[i].eAudDataFlag = CService::SF_AUDIO;
-            Service[i].iServiceDescr = 0;
-            Service[i].strLabel = "";
-			AudioComponentStatus[i].SetStatus(NOT_PRESENT);
-			DataComponentStatus[i].SetStatus(NOT_PRESENT);
-        }
-
-        for (i = 0; i < MAX_NUM_STREAMS; i++)
-        {
-            Stream[i].iLenPartA = 0;
-            Stream[i].iLenPartB = 0;
-        }
-    }
-    else
-    {
-
-        // Set up encoded AM audio parameters
-        Service[0].AudioParam.strTextMessage = "";
-        Service[0].AudioParam.iStreamID = 0;
-        Service[0].AudioParam.eAudioCoding = CAudioParam::AC_AAC;
-        Service[0].AudioParam.eSBRFlag = CAudioParam::SBR_NOT_USED;
-        Service[0].AudioParam.eAudioSamplRate = CAudioParam::AS_24KHZ;
-        Service[0].AudioParam.bTextflag = false;
-        Service[0].AudioParam.bEnhanceFlag = false;
-        Service[0].AudioParam.eAudioMode = CAudioParam::AM_MONO; // ? FM could be stereo
-        Service[0].AudioParam.eSurround = CAudioParam::MS_NONE;
-        Service[0].AudioParam.xHE_AAC_config.clear();
-
-        Service[0].iServiceID = SERV_ID_NOT_USED;
-        Service[0].eCAIndication = CService::CA_NOT_USED;
-        Service[0].iLanguage = 0;
-        Service[0].strCountryCode = "";
-        Service[0].strLanguageCode = "";
-        Service[0].eAudDataFlag = CService::SF_AUDIO;
-        Service[0].iServiceDescr = 0;
-        Service[0].strLabel = "";
-
-        Stream[0].iLenPartA = 0;
-        Stream[0].iLenPartB = 1044;
+        Service[i].iServiceID = SERV_ID_NOT_USED;
+        Service[i].eCAIndication = CService::CA_NOT_USED;
+        Service[i].iLanguage = 0;
+        Service[i].strCountryCode = "";
+        Service[i].strLanguageCode = "";
+        Service[i].eAudDataFlag = CService::SF_AUDIO;
+        Service[i].iServiceDescr = 0;
+        Service[i].strLabel = "";
+        AudioComponentStatus[i].SetStatus(NOT_PRESENT);
+        DataComponentStatus[i].SetStatus(NOT_PRESENT);
     }
 
-    /* Reset alternative frequencies */
+    for (i = 0; i < MAX_NUM_STREAMS; i++)
+    {
+        Stream[i].iLenPartA = 0;
+        Stream[i].iLenPartB = 0;
+    }
+
+        /* Reset alternative frequencies */
     AltFreqSign.Reset();
 
     /* Date, time */

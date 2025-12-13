@@ -40,7 +40,6 @@
 #include "TextMessage.h"
 #include "util/AudioFile.h"
 #include "util/Utilities.h"
-#include "AMDemodulation.h" // For CMixer
 
 /* Definitions ****************************************************************/
 
@@ -261,47 +260,6 @@ protected:
             (*pvecOutputData2)[i] = (*pvecInputData)[i];
         }
     }
-};
-
-
-class CWriteIQFile : public CReceiverModul<_REAL, _REAL>
-{
-public:
-    CWriteIQFile();
-    virtual ~CWriteIQFile();
-
-    void StartRecording(CParameter& Parameters);
-    void StopRecording();
-
-    void NewFrequency(CParameter &Parameters);
-
-	bool IsRecording() {return bIsRecording;}
-
-protected:
-    FILE *					pFile;
-    CVector<_SAMPLE>		vecsTmpAudData;
-
-    virtual void InitInternal(CParameter& Parameters);
-    virtual void ProcessDataInternal(CParameter& Parameters);
-    void		 OpenFile(CParameter& Parameters);
-
-    /* For doing the IF to IQ conversion (stolen from AM demod) */
-    CRealVector					rvecInpTmp;
-    CComplexVector				cvecHilbert;
-    int							iHilFiltBlLen;
-    CFftPlans					FftPlansHilFilt;
-
-    CComplexVector				cvecBReal;
-    CComplexVector				cvecBImag;
-    CRealVector					rvecZReal;
-    CRealVector					rvecZImag;
-
-    CMixer						Mixer;
-
-    int							iFrequency; // For use in generating filename
-    bool					bIsRecording;
-    bool					bChangeReceived;
-
 };
 
 
