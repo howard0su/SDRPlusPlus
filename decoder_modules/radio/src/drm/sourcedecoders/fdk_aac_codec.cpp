@@ -266,13 +266,9 @@ FdkAacCodec::DecOpen(const CAudioParam& AudioParam, int& iAudioSampleRate)
         cerr << endl;
         iAudioSampleRate = pinfo->extSamplingRate;
 
-    #ifdef KIWISDR
         // KiwiSDR: fix to detect mono non-SBR, e.g. All India Radio, 7550 kHz
         if (iAudioSampleRate == 0) iAudioSampleRate = pinfo->aacSampleRate;
         if (iAudioSampleRate == 0) {
-    #else
-        if (pinfo->extSamplingRate == 0) {
-    #endif
             cerr << "FDK DecOpen codec returned sample rate = 0?" << endl;
             iAudioSampleRate = iDefaultSampleRate; // get from AudioParam if codec couldn't get it
         }

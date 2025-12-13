@@ -316,13 +316,6 @@ void CTagItemDecoderCdmo::DecodeTag(CVector<_BINARY>& vecbiTag, const int iLen)
 
     if (pDRMReceiver == nullptr)
         return;
-
-    if(s == "drm_")
-        pDRMReceiver->SetReceiverMode(RM_DRM);
-    if(s == "am__")
-        pDRMReceiver->SetReceiverMode(RM_AM);
-    if(s == "fm__")
-        pDRMReceiver->SetReceiverMode(RM_FM);
 }
 
 void CTagItemDecoderCrec::DecodeTag(CVector<_BINARY>& vecbiTag, const int iLen)
@@ -338,11 +331,6 @@ void CTagItemDecoderCrec::DecodeTag(CVector<_BINARY>& vecbiTag, const int iLen)
 
     if (pDRMReceiver == nullptr)
         return;
-
-    if(s == "st")
-        pDRMReceiver->SetRSIRecording(c4=='1', c3);
-    if(s == "iq")
-        pDRMReceiver->SetIQRecording(c4=='1');
 }
 
 void CTagItemDecoderCpro::DecodeTag(CVector<_BINARY>& vecbiTag, const int iLen)

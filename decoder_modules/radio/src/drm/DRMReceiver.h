@@ -45,7 +45,6 @@
 #include "MSCMultiplexer.h"
 #include "InputResample.h"
 #include "datadecoding/DataDecoder.h"
-#include "sourcedecoders/AudioSourceEncoder.h"
 #include "sourcedecoders/AudioSourceDecoder.h"
 #include "MLC/MLC.h"
 #include "interleaver/SymbolInterleaver.h"
@@ -54,8 +53,6 @@
 #include "sync/FreqSyncAcq.h"
 #include "sync/TimeSync.h"
 #include "sync/SyncUsingPil.h"
-#include "AMDemodulation.h"
-#include "AMSSDemodulation.h"
 #include "sound/soundinterface.h"
 #include "PlotManager.h"
 #include "DrmTransceiver.h"
@@ -63,19 +60,11 @@
 /* Definitions ****************************************************************/
 /* Number of FAC frames until the acquisition is activated in case a signal
    was successfully decoded */
-#ifdef KIWISDR
-    #define	NUM_FAC_FRA_U_ACQ_WITH			(10*3)
-#else
-    #define	NUM_FAC_FRA_U_ACQ_WITH			10
-#endif
+#define	NUM_FAC_FRA_U_ACQ_WITH			10
 
 /* Number of OFDM symbols until the acquisition is activated in case no signal
    could be decoded after previous acquisition try */
-#ifdef KIWISDR
-    #define	NUM_OFDMSYM_U_ACQ_WITHOUT		(150*3)
-#else
-    #define	NUM_OFDMSYM_U_ACQ_WITHOUT		150
-#endif
+#define	NUM_OFDMSYM_U_ACQ_WITHOUT		150
 
 /* Number of FAC blocks for delayed tracking mode switch (caused by time needed
    for initalizing the channel estimation */
@@ -179,27 +168,19 @@ public:
     EAcqStat				GetAcquiState() {
         return Parameters.GetAcquiState();
     }
-    ERecMode				GetReceiverMode() {
-        return eReceiverMode;
-    }
     bool GetDownstreamRSCIOutEnabled()
     {
         return downstreamRSCI.GetOutEnabled();
     }
 
-    void					SetReceiverMode(ERecMode eNewMode);
     void					SetInitResOff(_REAL rNRO)
     {
         rInitResampleOffset = rNRO;
     }
-    void					SetAMDemodType(EDemodType);
-    void					SetAMFilterBW(int iBw);
-    void					SetAMDemodAcq(_REAL rNewNorCen);
     void	 				SetFrequency(int);
     int		 				GetFrequency() {
         return Parameters.GetFrequency();
     }
-    void					SetIQRecording(bool);
     void					SetRSIRecording(bool, const char);
 
     /* Channel Estimation */
@@ -287,15 +268,6 @@ public:
     CDataDecoder*			GetDataDecoder() {
         return &DataDecoder;
     }
-    CAMDemodulation*		GetAMDemod() {
-        return &AMDemodulation;
-    }
-    CAMSSPhaseDemod*		GetAMSSPhaseDemod() {
-        return &AMSSPhaseDemod;
-    }
-    CAMSSDecode*			GetAMSSDecode() {
-        return &AMSSDecode;
-    }
     CFreqSyncAcq*			GetFreqSyncAcq() {
         return &FreqSyncAcq;
     }
@@ -371,29 +343,17 @@ protected:
     CDataDecoder			DataDecoder;
     CSplit					Split;
     CSplit					SplitForIQRecord;
-    CWriteIQFile			WriteIQFile;
     CSplitAudio				SplitAudio;
-    CAudioSourceEncoderRx	AudioSourceEncoder; // For encoding the audio for RSI
     CSplitFAC				SplitFAC;
     CSplitSDC				SplitSDC;
     CSplitMSC				SplitMSC[MAX_NUM_STREAMS];
     CConvertAudio			ConvertAudio;
-    CAMDemodulation			AMDemodulation;
-    CAMSSPhaseDemod			AMSSPhaseDemod;
-    CAMSSExtractBits		AMSSExtractBits;
-    CAMSSDecode				AMSSDecode;
 
     CUpstreamDI*			pUpstreamRSCI;
     CDecodeRSIMDI			DecodeRSIMDI;
     CDownstreamDI			downstreamRSCI;
 
     /* Buffers */
-    CSingleBuffer<_REAL>			AMDataBuf;
-    CSingleBuffer<_REAL>			AMSSDataBuf;
-    CSingleBuffer<_REAL>			AMSSPhaseBuf;
-    CCyclicBuffer<_REAL>			AMSSResPhaseBuf;
-    CCyclicBuffer<_BINARY>			AMSSBitsBuf;
-
     CCyclicBuffer<_REAL>			DemodDataBuf;
     CSingleBuffer<_REAL>			IQRecordDataBuf;
 
@@ -429,8 +389,6 @@ protected:
     int						iGoodSignCnt;
     int						iDelayedTrackModeCnt;
     ERecState				eReceiverState;
-    ERecMode				eReceiverMode;
-    ERecMode				eNewReceiverMode;
 
     int						iAudioStreamID;
     int						iDataStreamID;
@@ -444,11 +402,6 @@ protected:
 
     /* Counter for unlocked frames, to keep generating RSCI even when unlocked */
     int						iUnlockedCount;
-    int						iBwAM;
-    int						iBwLSB;
-    int						iBwUSB;
-    int						iBwCW;
-    int						iBwFM;
     time_t					time_keeper;
 
     CPlotManager			PlotManager;

@@ -2,6 +2,7 @@
 
 #pragma once
 #include "../demod.h"
+#include "../drm/DRMReceiver.h"
 
 namespace demod {
     class DRM : public Demodulator {
@@ -20,16 +21,12 @@ namespace demod {
             this->name = name;
             audioSampleRate = audioSR;
 
-            // Define structure
-            c2s.init(input);
         }
 
         void start() {
-            c2s.start();
         }
 
         void stop() {
-            c2s.stop();
         }
 
         void showMenu() {}
@@ -37,7 +34,6 @@ namespace demod {
         void setBandwidth(double bandwidth) {}
 
         void setInput(dsp::stream<dsp::complex_t>* input) {
-            c2s.setInput(input);
         }
 
         void AFSampRateChanged(double newSR) {
@@ -65,7 +61,8 @@ namespace demod {
 
     private:
         double audioSampleRate;
-        DRMDemodulation c2s;
+        dsp::convert::ComplexToStereo c2s;
+        CDRMReceiver drmReceiver;
 
         std::string name;
     };

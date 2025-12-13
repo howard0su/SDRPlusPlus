@@ -1054,10 +1054,7 @@ void CReceiveData::CalculateSigStrengthCorrection(CParameter &Parameters, CVecto
     }
 
     /* Add on the calibration factor for the current mode */
-    if (Parameters.GetReceiverMode() == RM_DRM)
-        rCorrection += Parameters.FrontEndParameters.rCalFactorDRM;
-    else if (Parameters.GetReceiverMode() == RM_AM)
-        rCorrection += Parameters.FrontEndParameters.rCalFactorAM;
+    rCorrection += Parameters.FrontEndParameters.rCalFactorDRM;
 
     Parameters.rSigStrengthCorrection = rCorrection;
 

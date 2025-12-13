@@ -104,7 +104,6 @@ void CDownstreamDI::SendLockedFrame(CParameter& Parameter,
 		vecTagItemGeneratorStr[i].GenTag(Parameter, vecMSCData[i]);
 	}
 	TagItemGeneratorRobMod.GenTag(Parameter.GetWaveMode());
-	TagItemGeneratorRxDemodMode.GenTag(Parameter.GetReceiverMode());
 
 	/* SDC channel information tag must be created here because it must be sent
 	   with each AF packet */
@@ -157,8 +156,6 @@ void CDownstreamDI::SendUnlockedFrame(CParameter& Parameter)
 	/* mode is unknown - make empty robm tag */
 	TagItemGeneratorRobMod.GenEmptyTag();
 
-	TagItemGeneratorRxDemodMode.GenTag(Parameter.GetReceiverMode());
-
 	TagItemGeneratorSDCChanInf.GenEmptyTag();
 
 	TagItemGeneratorReceiverStatus.GenTag(Parameter);
@@ -198,9 +195,6 @@ void CDownstreamDI::SendAMFrame(CParameter& Parameter, CSingleBuffer<_BINARY>& C
 	TagItemGeneratorSDC.GenEmptyTag();
 	/* mode is unknown - make empty robm tag */
 	TagItemGeneratorRobMod.GenEmptyTag();
-
-	/* demod mode */
-	TagItemGeneratorRxDemodMode.GenTag(Parameter.GetReceiverMode());
 
 	TagItemGeneratorSDCChanInf.GenEmptyTag();
 

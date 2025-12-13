@@ -63,11 +63,10 @@ CDRMReceiver::CDRMReceiver(CSettings* nPsettings) : CDRMTransceiver(),
     RSIPacketBuf(),
     MSCDecBuf(MAX_NUM_STREAMS), MSCUseBuf(MAX_NUM_STREAMS),
     MSCSendBuf(MAX_NUM_STREAMS), iAcquRestartCnt(0),
-    iAcquDetecCnt(0), iGoodSignCnt(0), eReceiverMode(RM_DRM),
-    eNewReceiverMode(RM_DRM), iAudioStreamID(STREAM_ID_NOT_USED),
+    iAcquDetecCnt(0), iGoodSignCnt(0),
+    iAudioStreamID(STREAM_ID_NOT_USED),
     iDataStreamID(STREAM_ID_NOT_USED),
     rInitResampleOffset((_REAL) 0.0),
-    iBwAM(10000), iBwLSB(5000), iBwUSB(5000), iBwCW(150), iBwFM(6000),
     time_keeper(0),
     PlotManager(), iPrevSigSampleRate(0),Parameters(*(new CParameter())), pSettings(nPsettings)
 {
@@ -83,70 +82,6 @@ CDRMReceiver::CDRMReceiver(CSettings* nPsettings) : CDRMTransceiver(),
 CDRMReceiver::~CDRMReceiver()
 {
     delete pUpstreamRSCI;
-}
-
-void
-CDRMReceiver::SetReceiverMode(ERecMode eNewMode)
-{
-    if (eReceiverMode!=eNewMode || eNewReceiverMode != RM_NONE)
-        eNewReceiverMode = eNewMode;
-}
-
-void
-CDRMReceiver::SetAMDemodType(EDemodType eNew)
-{
-    AMDemodulation.SetDemodType(eNew);
-    switch (eNew)
-    {
-    case DT_AM:
-        AMDemodulation.SetFilterBW(iBwAM);
-        break;
-
-    case DT_LSB:
-        AMDemodulation.SetFilterBW(iBwLSB);
-        break;
-
-    case DT_USB:
-        AMDemodulation.SetFilterBW(iBwUSB);
-        break;
-
-    case DT_CW:
-        AMDemodulation.SetFilterBW(iBwCW);
-        break;
-
-    case DT_FM:
-        AMDemodulation.SetFilterBW(iBwFM);
-        break;
-    }
-}
-
-void
-CDRMReceiver::SetAMFilterBW(int value)
-{
-    /* Store filter bandwidth for this demodulation type */
-    switch (AMDemodulation.GetDemodType())
-    {
-    case DT_AM:
-        iBwAM = value;
-        break;
-
-    case DT_LSB:
-        iBwLSB = value;
-        break;
-
-    case DT_USB:
-        iBwUSB = value;
-        break;
-
-    case DT_CW:
-        iBwCW = value;
-        break;
-
-    case DT_FM:
-        iBwFM = value;
-        break;
-    }
-    AMDemodulation.SetFilterBW(value);
 }
 
 void
@@ -388,83 +323,6 @@ CDRMReceiver::UtilizeDRM(bool& bEnoughData)
 }
 
 void
-CDRMReceiver::DemodulateAM(bool& bEnoughData)
-{
-    /* The incoming samples are split 2 ways.
-       One set is passed to the existing AM demodulator.
-       The other set is passed to the new AMSS demodulator.
-       The AMSS and AM demodulators work completely independently
-     */
-    if (Split.ProcessData(Parameters, DemodDataBuf, AMDataBuf, AMSSDataBuf))
-    {
-        bEnoughData = true;
-    }
-
-    /* AM demodulation ------------------------------------------ */
-    if (AMDemodulation.ProcessData(Parameters, AMDataBuf, AMAudioBuf))
-    {
-        bEnoughData = true;
-    }
-
-    /* AMSS phase demodulation */
-    if (AMSSPhaseDemod.ProcessData(Parameters, AMSSDataBuf, AMSSPhaseBuf))
-    {
-        bEnoughData = true;
-    }
-}
-
-void
-CDRMReceiver::DecodeAM(bool& bEnoughData)
-{
-    /* AMSS resampling */
-    if (InputResample.ProcessData(Parameters, AMSSPhaseBuf, AMSSResPhaseBuf))
-    {
-        bEnoughData = true;
-    }
-
-    /* AMSS bit extraction */
-    if (AMSSExtractBits.
-            ProcessData(Parameters, AMSSResPhaseBuf, AMSSBitsBuf))
-    {
-        bEnoughData = true;
-    }
-
-    /* AMSS data decoding */
-    if (AMSSDecode.ProcessData(Parameters, AMSSBitsBuf, SDCDecBuf))
-    {
-        bEnoughData = true;
-    }
-}
-
-void
-CDRMReceiver::UtilizeAM(bool& bEnoughData)
-{
-    if (UtilizeSDCData.WriteData(Parameters, SDCDecBuf))
-    {
-        bEnoughData = true;
-    }
-}
-
-void CDRMReceiver::DemodulateFM(bool& bEnoughData)
-{
-    if (ConvertAudio.ProcessData(Parameters, DemodDataBuf, AMAudioBuf))
-    {
-        bEnoughData = true;
-        iAudioStreamID = 0; // TODO
-    }
-}
-
-void CDRMReceiver::DecodeFM(bool& bEnoughData)
-{
-    (void)bEnoughData;
-}
-
-void CDRMReceiver::UtilizeFM(bool& bEnoughData)
-{
-    (void)bEnoughData;
-}
-
-void
 CDRMReceiver::DetectAcquiFAC()
 {
     /* If upstreamRSCI in is enabled, do not check for acquisition state because we want
@@ -521,149 +379,10 @@ CDRMReceiver::DetectAcquiFAC()
 void
 CDRMReceiver::InitReceiverMode()
 {
-    switch (eNewReceiverMode)
-    {
-    case RM_AM:
-    case RM_FM:
-#if 0
-        if (pAMParam == nullptr)
-        {
-            /* its the first time we have been in AM mode */
-            if (pDRMParam == nullptr)
-            {
-                /* DRM Mode was never invoked so we get to claim the default parameter instance */
-                pAMParam = pParameters;
-            }
-            else
-            {
-                /* change from DRM to AM Mode - we better have our own copy
-                 * but make sure we inherit the initial settings of the default
-                 */
-                pAMParam = new CParameter(*pDRMParam);
-            }
-        }
-        else
-        {
-            /* we have been in AM mode before, and have our own parameters but
-             * we might need some state from the DRM mode params
-             */
-            switch (eReceiverMode)
-            {
-            case RM_AM:
-                /* AM to AM switch */
-                break;
-            case RM_FM:
-                /* AM to FM switch - re-acquisition requested - no special action */
-                break;
-            case RM_DRM:
-                /* DRM to AM switch - grab some common stuff */
-                pAMParam->rSigStrengthCorrection = pDRMParam->rSigStrengthCorrection;
-                pAMParam->bMeasurePSD = pDRMParam->bMeasurePSD;
-                pAMParam->bMeasurePSDAlways = pDRMParam->bMeasurePSDAlways;
-                pAMParam->bMeasureInterference = pDRMParam->bMeasureInterference;
-                pAMParam->FrontEndParameters = pDRMParam->FrontEndParameters;
-                pAMParam->gps_data = pDRMParam->gps_data;
-                pAMParam->use_gpsd = pDRMParam->use_gpsd;
-                pAMParam->sSerialNumber = pDRMParam->sSerialNumber;
-                pAMParam->sReceiverID  = pDRMParam->sReceiverID;
-                pAMParam->SetDataDirectory(pDRMParam->GetDataDirectory());
-                break;
-            case RM_NONE:
-                /* Start from cold in AM mode - no special action */
-                break;
-            }
-        }
-        pAMParam->eReceiverMode = eNewReceiverMode;
-        pParameters = pAMParam;
-
-        if (pParameters == nullptr)
-            throw CGenErr("Something went terribly wrong in the Receiver");
-#endif
-        Parameters.eReceiverMode = eNewReceiverMode;
-
-        /* Tell the SDC decoder that it's AMSS to decode (no AFS index) */
-        UtilizeSDCData.GetSDCReceive()->SetSDCType(CSDCReceive::SDC_AMSS);
-
-        /* Set the receive status - this affects the RSI output */
-        Parameters.ReceiveStatus.TSync.SetStatus(NOT_PRESENT);
-        Parameters.ReceiveStatus.FSync.SetStatus(NOT_PRESENT);
-        Parameters.ReceiveStatus.FAC.SetStatus(NOT_PRESENT);
-        Parameters.ReceiveStatus.SDC.SetStatus(NOT_PRESENT);
-        Parameters.ReceiveStatus.SLAudio.SetStatus(NOT_PRESENT);
-        Parameters.ReceiveStatus.LLAudio.SetStatus(NOT_PRESENT);
-        break;
-    case RM_DRM:
-#if 0
-        if (pDRMParam == nullptr)
-        {
-            /* its the first time we have been in DRM mode */
-            if (pAMParam == nullptr)
-            {
-                /* AM Mode was never invoked so we get to claim the default parameter instance */
-                pDRMParam = pParameters;
-            }
-            else
-            {
-                /* change from AM to DRM Mode - we better have our own copy
-                 * but make sure we inherit the initial settings of the default
-                 */
-                pDRMParam = new CParameter(*pAMParam);
-            }
-        }
-        else
-        {
-            /* we have been in DRM mode before, and have our own parameters but
-             * we might need some state from the AM mode params
-             */
-            switch (eReceiverMode)
-            {
-            case RM_AM:
-            case RM_FM:
-                /* AM to DRM switch - grab some common stuff */
-                pDRMParam->rSigStrengthCorrection = pAMParam->rSigStrengthCorrection;
-                pDRMParam->bMeasurePSD = pAMParam->bMeasurePSD;
-                pDRMParam->bMeasurePSDAlways = pAMParam->bMeasurePSDAlways;
-                pDRMParam->bMeasureInterference = pAMParam->bMeasureInterference;
-                pDRMParam->FrontEndParameters = pAMParam->FrontEndParameters;
-                pDRMParam->gps_data = pAMParam->gps_data;
-                pDRMParam->use_gpsd = pAMParam->use_gpsd;
-                pDRMParam->sSerialNumber = pAMParam->sSerialNumber;
-                pDRMParam->sReceiverID  = pAMParam->sReceiverID;
-                pDRMParam->SetDataDirectory(pAMParam->GetDataDirectory());
-                break;
-            case RM_DRM:
-                /* DRM to DRM switch - re-acquisition requested - no special action */
-                break;
-            case RM_NONE:
-                /* Start from cold in DRM mode - no special action */
-                break;
-            }
-        }
-#endif
-//        pDRMParam->eReceiverMode = RM_DRM;
-//        pParameters = pDRMParam;
-
-//        if (pParameters == nullptr)
-//            throw CGenErr("Something went terribly wrong in the Receiver");
-        Parameters.eReceiverMode = eNewReceiverMode;
-
-        UtilizeSDCData.GetSDCReceive()->SetSDCType(CSDCReceive::SDC_DRM);
-        break;
-    case RM_NONE:
-        return;
-    }
-
-    eReceiverMode = eNewReceiverMode;
-    /* Reset new mode flag */
-    eNewReceiverMode = RM_NONE;
+    UtilizeSDCData.GetSDCReceive()->SetSDCType(CSDCReceive::SDC_DRM);
 
     /* Init all modules */
     SetInStartMode();
-
-    if (pUpstreamRSCI->GetOutEnabled())
-    {
-        pUpstreamRSCI->SetReceiverMode(eReceiverMode);
-    }
 }
 
 void
@@ -671,18 +390,6 @@ CDRMReceiver::CloseSoundInterfaces()
 {
     ReceiveData.Stop();
     WriteData.Stop();
-}
-
-void
-CDRMReceiver::SetAMDemodAcq(_REAL rNewNorCen)
-{
-    /* Set the frequency where the AM demodulation should look for the
-       aquisition. Receiver must be in AM demodulation mode */
-    if (eReceiverMode == RM_AM)
-    {
-        AMDemodulation.SetAcqFreq(rNewNorCen);
-        AMSSPhaseDemod.SetAcqFreq(rNewNorCen);
-    }
 }
 
 void
@@ -876,66 +583,25 @@ CDRMReceiver::process()
     else
     {
 
-        if (WriteIQFile.IsRecording())
-        {
-            /* Receive data in RecDataBuf */
-            ReceiveData.ReadData(Parameters, RecDataBuf);
+        /* No I/Q recording then receive data directly in DemodDataBuf */
+        ReceiveData.ReadData(Parameters, DemodDataBuf);
 
-            /* Split samples, one output to the demodulation, another for IQ recording */
-            if (SplitForIQRecord.ProcessData(Parameters, RecDataBuf, DemodDataBuf, IQRecordDataBuf))
-            {
-                bEnoughData = true;
-            }
-        }
-        else
-        {
-            /* No I/Q recording then receive data directly in DemodDataBuf */
-            ReceiveData.ReadData(Parameters, DemodDataBuf);
-        }
-
-        switch (eReceiverMode)
-        {
-        case RM_DRM:
-            DemodulateDRM(bEnoughData); DecodeDRM(bEnoughData, bFrameToSend);
-            break;
-        case RM_AM:
-            DemodulateAM(bEnoughData);
-            DecodeAM(bEnoughData);
-            break;
-        case RM_FM:
-            DemodulateFM(bEnoughData);
-            DecodeFM(bEnoughData);
-            break;
-        case RM_NONE:
-            break;
-        }
+        DemodulateDRM(bEnoughData);
+        DecodeDRM(bEnoughData, bFrameToSend);
     }
 
     /* Split the data for downstream RSCI and local processing. TODO make this conditional */
-    switch (eReceiverMode)
+    SplitFAC.ProcessData(Parameters, FACDecBuf, FACUseBuf, FACSendBuf);
+
+    /* if we have an SDC block, make a copy and keep it until the next frame is to be sent */
+    if (SDCDecBuf.GetFillLevel() == Parameters.iNumSDCBitsPerSFrame)
     {
-    case RM_DRM:
-        SplitFAC.ProcessData(Parameters, FACDecBuf, FACUseBuf, FACSendBuf);
+        SplitSDC.ProcessData(Parameters, SDCDecBuf, SDCUseBuf, SDCSendBuf);
+    }
 
-        /* if we have an SDC block, make a copy and keep it until the next frame is to be sent */
-        if (SDCDecBuf.GetFillLevel() == Parameters.iNumSDCBitsPerSFrame)
-        {
-            SplitSDC.ProcessData(Parameters, SDCDecBuf, SDCUseBuf, SDCSendBuf);
-        }
-
-        for (int i = 0; i < int(MSCDecBuf.size()); i++)
-        {
-            SplitMSC[i].ProcessData(Parameters, MSCDecBuf[i], MSCUseBuf[i], MSCSendBuf[i]);
-        }
-        break;
-    case RM_AM:
-        SplitAudio.ProcessData(Parameters, AMAudioBuf, AudSoDecBuf, AMSoEncBuf);
-        break;
-    case RM_FM:
-        SplitAudio.ProcessData(Parameters, AMAudioBuf, AudSoDecBuf, AMSoEncBuf);
-        break;
-    case RM_NONE:
-        break;
+    for (int i = 0; i < int(MSCDecBuf.size()); i++)
+    {
+        SplitMSC[i].ProcessData(Parameters, MSCDecBuf[i], MSCUseBuf[i], MSCSendBuf[i]);
     }
 
     /* Decoding */
@@ -944,68 +610,30 @@ CDRMReceiver::process()
         /* Init flag */
         bEnoughData = false;
 
-        // Write output I/Q file
-        if (WriteIQFile.IsRecording())
-        {
-            if (WriteIQFile.WriteData(Parameters, IQRecordDataBuf))
-            {
-                bEnoughData = true;
-            }
-        }
-
-        switch (eReceiverMode)
-        {
-        case RM_DRM:
-            UtilizeDRM(bEnoughData);
-            break;
-        case RM_AM:
-            UtilizeAM(bEnoughData);
-            break;
-        case RM_FM:
-            UtilizeFM(bEnoughData);
-            break;
-        case RM_NONE:
-            break;
-        }
+        UtilizeDRM(bEnoughData);
     }
 
     /* Output to downstream RSCI */
     if (downstreamRSCI.GetOutEnabled())
     {
-        switch (eReceiverMode)
+        if (Parameters.eAcquiState == AS_NO_SIGNAL)
         {
-        case RM_DRM:
-            if (Parameters.eAcquiState == AS_NO_SIGNAL)
+            /* we will get one of these between each FAC block, and occasionally we */
+            /* might get two, so don't start generating free-wheeling RSCI until we've. */
+            /* had three in a row */
+            if (FreqSyncAcq.GetUnlockedFrameBoundary())
             {
-                /* we will get one of these between each FAC block, and occasionally we */
-                /* might get two, so don't start generating free-wheeling RSCI until we've. */
-                /* had three in a row */
-                if (FreqSyncAcq.GetUnlockedFrameBoundary())
-                {
-                    if (iUnlockedCount < MAX_UNLOCKED_COUNT)
-                        iUnlockedCount++;
-                    else
-                        downstreamRSCI.SendUnlockedFrame(Parameters);
-                }
+                if (iUnlockedCount < MAX_UNLOCKED_COUNT)
+                    iUnlockedCount++;
+                else
+                    downstreamRSCI.SendUnlockedFrame(Parameters);
             }
-            else if (bFrameToSend)
-            {
-                downstreamRSCI.SendLockedFrame(Parameters, FACSendBuf, SDCSendBuf, MSCSendBuf);
-                iUnlockedCount = 0;
-                bFrameToSend = false;
-            }
-            break;
-        case RM_AM:
-        case RM_FM:
-            /* Encode audio for RSI output */
-            if (AudioSourceEncoder.ProcessData(Parameters, AMSoEncBuf, MSCSendBuf[0]))
-                bFrameToSend = true;
-
-            if (bFrameToSend)
-                downstreamRSCI.SendAMFrame(Parameters, MSCSendBuf[0]);
-            break;
-        case RM_NONE:
-            break;
+        }
+        else if (bFrameToSend)
+        {
+            downstreamRSCI.SendLockedFrame(Parameters, FACSendBuf, SDCSendBuf, MSCSendBuf);
+            iUnlockedCount = 0;
+            bFrameToSend = false;
         }
     }
 
@@ -1016,7 +644,7 @@ CDRMReceiver::process()
     }
 
     /* Play and/or save the audio */
-    if (iAudioStreamID != STREAM_ID_NOT_USED || (eReceiverMode == RM_AM) || (eReceiverMode == RM_FM))
+    if (iAudioStreamID != STREAM_ID_NOT_USED)
     {
         bool rv;
         rv = WriteData.WriteData(Parameters, AudSoDecBuf);
@@ -1118,15 +746,8 @@ CDRMReceiver::InitsForAllModules()
 
     Split.SetInitFlag();
     SplitAudio.SetInitFlag();
-    AudioSourceEncoder.SetInitFlag();
-    AMDemodulation.SetInitFlag();
 
     SplitForIQRecord.SetInitFlag();
-    WriteIQFile.SetInitFlag();
-    /* AMSS */
-    AMSSPhaseDemod.SetInitFlag();
-    AMSSExtractBits.SetInitFlag();
-    AMSSDecode.SetInitFlag();
 
     pUpstreamRSCI->SetInitFlag();
     //downstreamRSCI.SetInitFlag();
@@ -1136,15 +757,9 @@ CDRMReceiver::InitsForAllModules()
        called or modes are switched, the buffer could have some data left which
        lead to an overrun) */
     RecDataBuf.Clear();
-    AMDataBuf.Clear();
 
     DemodDataBuf.Clear();
     IQRecordDataBuf.Clear();
-
-    AMSSDataBuf.Clear();
-    AMSSPhaseBuf.Clear();
-    AMSSResPhaseBuf.Clear();
-    AMSSBitsBuf.Clear();
 
     InpResBuf.Clear();
     FreqSyncAcqBuf.Clear();
@@ -1184,15 +799,8 @@ CDRMReceiver::InitsForWaveMode()
     InputResample.SetInitFlag();
     FreqSyncAcq.SetInitFlag();
     Split.SetInitFlag();
-    AMDemodulation.SetInitFlag();
-    AudioSourceEncoder.SetInitFlag();
 
     SplitForIQRecord.SetInitFlag();
-    WriteIQFile.SetInitFlag();
-
-    AMSSPhaseDemod.SetInitFlag();
-    AMSSExtractBits.SetInitFlag();
-    AMSSDecode.SetInitFlag();
 
     TimeSync.SetInitFlag();
     OFDMDemodulation.SetInitFlag();
@@ -1324,9 +932,6 @@ void CDRMReceiver::SetFrequency(int iNewFreqkHz)
 {
     Parameters.Lock();
     Parameters.SetFrequency(iNewFreqkHz);
-    /* clear out AMSS data and re-initialise AMSS acquisition */
-    if (Parameters.eReceiverMode == RM_AM)
-        Parameters.ResetServicesStreams();
     Parameters.Unlock();
 
     if (pUpstreamRSCI->GetOutEnabled())
@@ -1356,18 +961,6 @@ void CDRMReceiver::SetFrequency(int iNewFreqkHz)
 #endif
     if (downstreamRSCI.GetOutEnabled())
         downstreamRSCI.NewFrequency(Parameters);
-
-    /* tell the IQ file writer that freq has changed in case it needs to start a new file */
-    WriteIQFile.NewFrequency(Parameters);
-}
-
-void
-CDRMReceiver::SetIQRecording(bool bON)
-{
-    if (bON)
-        WriteIQFile.StartRecording(Parameters);
-    else
-        WriteIQFile.StopRecording();
 }
 
 void
@@ -1486,36 +1079,6 @@ CDRMReceiver::LoadSettings()
     /* Output channel selection */
     WriteData.SetOutChanSel((EOutChanSel)s.Get("Receiver", "outchansel", int(CS_BOTH_BOTH)));
 
-    /* AM Parameters */
-
-    /* AGC */
-    AMDemodulation.SetAGCType((EAmAgcType)s.Get("AM Demodulation", "agc", 0));
-
-    /* noise reduction */
-    AMDemodulation.SetNoiRedType((ENoiRedType)s.Get("AM Demodulation", "noisered", 0));
-
-#ifdef HAVE_SPEEX
-    /* noise reduction level */
-    AMDemodulation.SetNoiRedLevel(s.Get("AM Demodulation", "noiseredlvl", -12));
-#endif
-
-    /* pll enabled/disabled */
-    AMDemodulation.EnablePLL(s.Get("AM Demodulation", "enablepll", 0));
-
-    /* auto frequency acquisition */
-    AMDemodulation.EnableAutoFreqAcq(s.Get("AM Demodulation", "autofreqacq", 0));
-
-    /* demodulation type and bandwidth */
-    EDemodType eDemodType = (EDemodType)s.Get("AM Demodulation", "demodulation", DT_AM);
-    iBwAM = s.Get("AM Demodulation", "filterbwam", 10000);
-    iBwUSB = s.Get("AM Demodulation", "filterbwusb", 5000);
-    iBwLSB = s.Get("AM Demodulation", "filterbwlsb", 5000);
-    iBwCW = s.Get("AM Demodulation", "filterbwcw", 150);
-    iBwFM = s.Get("AM Demodulation", "filterbwfm", 6000);
-
-    /* Load user's saved filter bandwidth and demodulation type */
-    SetAMDemodType(eDemodType);
-
     /* Sound Out device */
     str = s.Get("Receiver", "snddevout", string());
     if(str == "") {
@@ -1572,10 +1135,6 @@ CDRMReceiver::LoadSettings()
     if (str != "" || s2 != "")
         downstreamRSCI.SetRSIRecording(Parameters, true, str[0], s2);
 
-    /* IQ File Recording */
-    if (s.Get("command", "recordiq", false))
-        WriteIQFile.StartRecording(Parameters);
-
     /* Mute audio flag */
     WriteData.MuteAudio(s.Get("Receiver", "muteaudio", false));
 
@@ -1603,9 +1162,6 @@ CDRMReceiver::LoadSettings()
 
     /* Number of iterations for MLC setting */
     MSCMLCDecoder.SetNumIterations(s.Get("Receiver", "mlciter", 1));
-
-    /* Receiver mode (DRM, AM, FM) */
-    SetReceiverMode(ERecMode(s.Get("Receiver", "mode", int(0))));
 
     /* Tuned Frequency */
     Parameters.SetFrequency(s.Get("Receiver", "frequency", 0));
@@ -1662,8 +1218,6 @@ CDRMReceiver::SaveSettings()
 {
     if (pSettings == nullptr) return;
     CSettings& s = *pSettings;
-
-    s.Put("Receiver", "mode", int(eReceiverMode));
 
     /* Receiver ------------------------------------------------------------- */
 
@@ -1726,34 +1280,6 @@ CDRMReceiver::SaveSettings()
 
     /* Tuned Frequency */
     s.Put("Receiver", "frequency", Parameters.GetFrequency());
-
-    /* AM Parameters */
-
-    /* AGC */
-    s.Put("AM Demodulation", "agc", AMDemodulation.GetAGCType());
-
-    /* noise reduction */
-    s.Put("AM Demodulation", "noisered", AMDemodulation.GetNoiRedType());
-
-#ifdef HAVE_SPEEX
-    /* noise reduction level */
-    s.Put("AM Demodulation", "noiseredlvl", AMDemodulation.GetNoiRedLevel());
-#endif
-
-    /* pll enabled/disabled */
-    s.Put("AM Demodulation", "enablepll", AMDemodulation.PLLEnabled());
-
-    /* auto frequency acquisition */
-    s.Put("AM Demodulation", "autofreqacq", AMDemodulation.AutoFreqAcqEnabled());
-
-    /* demodulation */
-    s.Put("AM Demodulation", "demodulation", AMDemodulation.GetDemodType());
-
-    s.Put("AM Demodulation", "filterbwam", iBwAM);
-    s.Put("AM Demodulation", "filterbwusb", iBwUSB);
-    s.Put("AM Demodulation", "filterbwlsb", iBwLSB);
-    s.Put("AM Demodulation", "filterbwcw", iBwCW);
-    s.Put("AM Demodulation", "filterbwfm", iBwFM);
 
     /* Front-end - combine into Hamlib? */
     s.Put("FrontEnd", "smetercorrectiontype", int(Parameters.FrontEndParameters.eSMeterCorrectionType));

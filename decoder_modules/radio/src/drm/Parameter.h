@@ -1089,10 +1089,6 @@ public:
 
     int iTimingOffsTrack;
 
-    ERecMode GetReceiverMode() {
-        return eReceiverMode;
-    }
-    ERecMode eReceiverMode;
     EAcqStat GetAcquiState() {
         return eAcquiState;
     }
