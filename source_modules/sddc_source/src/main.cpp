@@ -132,14 +132,6 @@ private:
         int id = devices.keyId(serial);
         selectedDevId = devices[id];
 
-        // define supported samplerates
-        samplerates.clear();
-        sampleRate = 64e6;
-        for (int i = 1; i <= 6; ++i) {
-            samplerates.define(sampleRate, getBandwdithScaled(sampleRate), sampleRate);
-            sampleRate /= 2;
-        }
-
         // Define the ports
         ports.clear();
         ports.define("hf", "HF", PORT_HF);
@@ -158,8 +150,6 @@ private:
         }
 
         // Load default options
-        sampleRate = 32e6;
-        srId = samplerates.valueId(sampleRate);
         port = PORT_HF;
         portId = ports.valueId(port);
         rfGain = 0;
@@ -168,13 +158,6 @@ private:
 
         // Load config
         config.acquire();
-        if (config.conf["devices"][selectedSerial].contains("samplerate")) {
-            int desiredSr = config.conf["devices"][selectedSerial]["samplerate"];
-            if (samplerates.keyExists(desiredSr)) {
-                srId = samplerates.keyId(desiredSr);
-                sampleRate = samplerates[srId];
-            }
-        }
         if (config.conf["devices"][selectedSerial].contains("port")) {
             std::string desiredPort = config.conf["devices"][selectedSerial]["port"];
             if (ports.keyExists(desiredPort)) {
@@ -184,6 +167,40 @@ private:
         }
 
         sddc_set_direct_sampling(dev, (port == PORT_HF) ? 1 : 0);
+
+        if (port == PORT_HF) {
+
+            // define supported samplerates
+            samplerates.clear();
+            sampleRate = 64e6;
+            for (int i = 1; i <= 6; ++i) {
+                samplerates.define(sampleRate, getBandwdithScaled(sampleRate), sampleRate);
+                sampleRate /= 2;
+            }
+
+            sampleRate = 32e6;
+            srId = samplerates.valueId(sampleRate);
+        }
+        else {
+            // define supported samplerates
+            samplerates.clear();
+            sampleRate = 8e6;
+            for (int i = 1; i <= 4; ++i) {
+                samplerates.define(sampleRate, getBandwdithScaled(sampleRate), sampleRate);
+                sampleRate /= 2;
+            }
+
+            sampleRate = 8e6;
+            srId = samplerates.valueId(sampleRate);
+        }
+
+        if (config.conf["devices"][selectedSerial].contains("samplerate")) {
+            int desiredSr = config.conf["devices"][selectedSerial]["samplerate"];
+            if (samplerates.keyExists(desiredSr)) {
+                srId = samplerates.keyId(desiredSr);
+                sampleRate = samplerates[srId];
+            }
+        }
 
         if (config.conf["devices"][selectedSerial].contains("rfGain")) {
             float min, max;
@@ -502,8 +519,8 @@ private:
     std::atomic<bool> run = false;
 
     bool bias;
-    int rf_gain_min, rf_gain_max;
-    int if_gain_min, if_gain_max;
+    int rf_gain_min = 0, rf_gain_max = 0;
+    int if_gain_min = 0, if_gain_max = 0;
 
     dsp::stream<dsp::complex_t> ddcIn;
     dsp::stream<int16_t> dataIn;
