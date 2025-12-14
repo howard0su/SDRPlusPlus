@@ -7,6 +7,7 @@
 #include <cstring>
 #include <vector>
 #include <volk/volk.h>
+#include <utils/flog.h>
 
 /*
 Implement the algorithm described in:
@@ -95,35 +96,6 @@ namespace dsp::filter {
         DEFAULT_PROC_RUN
 
     private:
-
-        inline void updateSignalPresence(const std::complex<float>& x)
-        {
-            // envelope^2
-            float mag2 = std::norm(x);
-
-            // IIR Smooth（about 5~10 ms window, alpha 0.001 at fs=384kHz）
-            constexpr float alpha = 0.001f;
-
-            sp_energy_avg += alpha * (mag2 - sp_energy_avg);
-
-            float mag = std::sqrt(mag2);
-            sp_env_avg += alpha * (mag - sp_env_avg);
-
-            float diff = mag - sp_env_avg;
-            sp_env_var += alpha * ((diff * diff) - sp_env_var);
-
-            if (++sp_count >= 256) {
-                sp_count = 0;
-
-                constexpr float ENERGY_MIN = 1e-4f;
-                constexpr float VAR_MAX    = 0.6f;
-
-                signal_present =
-                    (sp_energy_avg > ENERGY_MIN) &&
-                    (sp_env_var    < VAR_MAX);
-            }
-        }
-
         void setStageCountInternal(unsigned int stages) {
             _stages = stages;
             _filterOrder = (_stages * 4u) + 1u;
@@ -166,6 +138,12 @@ namespace dsp::filter {
 
             if (!std::isfinite(output.re) || !std::isfinite(output.im)) {
                 output = complex_t{ 0.0f, 0.0f };
+
+                flog::warn("MultipathFIR: Detected non-finite output sample, resetting filter state.");
+                
+                buffer::clear(stateBuffer, _filterOrder);
+                buffer::clear(coeffBuffer, _filterOrder);
+                coeffBuffer[_refIndex] = complex_t{ 1.0f, 0.0f };
             }
 
             return output;
