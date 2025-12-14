@@ -80,6 +80,8 @@ set(SDRPP_MODULE_CMAKE "${CMAKE_SOURCE_DIR}/sdrpp_module.cmake")
 # Root source folder
 set(SDRPP_CORE_ROOT "${CMAKE_SOURCE_DIR}/core/src/")
 
+set(CMAKE_OSX_DEPLOYMENT_TARGET "26.0")
+
 # Compiler flags
 if (${CMAKE_BUILD_TYPE} MATCHES "Debug")
     # Debug Flags
@@ -135,6 +137,9 @@ add_subdirectory("sink_modules/audio_sink")
 
 # Decoders
 add_subdirectory("decoder_modules/radio")
+
+# Misc
+add_subdirectory("misc_modules/recorder")
 
 if (MSVC)
     add_executable(sdrpp "src/main.cpp" "win32/resources.rc")
