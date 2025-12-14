@@ -8,6 +8,8 @@
 #include <gui/gui.h>
 #include <gui/style.h>
 
+#include "backend.h"
+
 float DEFAULT_COLOR_MAP[][3] = {
     { 0x00, 0x00, 0x20 },
     { 0x00, 0x00, 0x30 },
@@ -114,7 +116,7 @@ namespace ImGui {
     }
 
     void WaterFall::init() {
-        glGenTextures(1, &textureId);
+        textureId = backend::createTexture(dataWidth, waterfallHeight, nullptr);
     }
 
     void WaterFall::drawFFT() {
@@ -794,11 +796,7 @@ namespace ImGui {
 
     void WaterFall::updateWaterfallTexture() {
         std::lock_guard<std::mutex> lck(texMtx);
-        glBindTexture(GL_TEXTURE_2D, textureId);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, dataWidth, waterfallHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, (uint8_t*)waterfallFb);
+        backend::updateTexture(textureId, dataWidth, waterfallHeight, (uint8_t*)waterfallFb);
     }
 
     void WaterFall::onPositionChange() {

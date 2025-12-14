@@ -18,8 +18,6 @@ namespace ImGui {
         void* buffer;
 
     private:
-        void updateTexture();
-
         std::mutex bufferMtx;
         void* activeBuffer;
 

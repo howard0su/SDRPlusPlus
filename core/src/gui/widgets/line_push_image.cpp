@@ -1,4 +1,5 @@
 #include <gui/widgets/line_push_image.h>
+#include "backend.h"
 
 namespace ImGui {
     LinePushImage::LinePushImage(int frameWidth, int reservedIncrement) {
@@ -7,7 +8,7 @@ namespace ImGui {
         frameBuffer = (uint8_t*)malloc(_frameWidth * _reservedIncrement * 4);
         reservedCount = reservedIncrement;
 
-        glGenTextures(1, &textureId);
+        textureId = backend::createTexture(_frameWidth, reservedCount, nullptr);
     }
 
     void LinePushImage::draw(const ImVec2& size_arg) {
@@ -34,7 +35,7 @@ namespace ImGui {
 
         if (newData) {
             newData = false;
-            updateTexture();
+            backend::updateTexture(textureId, _frameWidth, _lineCount, frameBuffer);
         }
 
         window->DrawList->AddImage((void*)(intptr_t)textureId, min, ImVec2(min.x + width, min.y + height));
@@ -77,13 +78,4 @@ namespace ImGui {
     int LinePushImage::getLineCount() {
         return _lineCount;
     }
-
-    void LinePushImage::updateTexture() {
-        glBindTexture(GL_TEXTURE_2D, textureId);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, _frameWidth, _lineCount, 0, GL_RGBA, GL_UNSIGNED_BYTE, frameBuffer);
-    }
-
 }
