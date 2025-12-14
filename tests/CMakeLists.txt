@@ -25,17 +25,17 @@ else()
     pkg_check_modules(FFTW3 REQUIRED fftw3f)
     pkg_check_modules(VOLK REQUIRED volk)
 
-    target_include_directories(sdrpp_core PUBLIC
+    target_include_directories(unittest PUBLIC
         ${FFTW3_INCLUDE_DIRS}
         ${VOLK_INCLUDE_DIRS}
     )
     
-    target_link_directories(sdrpp_core PUBLIC
+    target_link_directories(unittest PUBLIC
         ${FFTW3_LIBRARY_DIRS}
         ${VOLK_LIBRARY_DIRS}
     )
 
-    target_link_libraries(sdrpp_core PUBLIC
+    target_link_libraries(unittest PUBLIC
         ${FFTW3_LIBRARIES}
         ${VOLK_LIBRARIES}
     )
