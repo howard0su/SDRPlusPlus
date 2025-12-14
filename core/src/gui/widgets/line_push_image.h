@@ -25,8 +25,6 @@ namespace ImGui {
         int getLineCount();
 
     private:
-        void updateTexture();
-
         std::mutex bufferMtx;
         uint8_t* frameBuffer;
 

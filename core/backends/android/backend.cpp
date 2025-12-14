@@ -16,6 +16,8 @@
 #include <gui/menus/theme.h>
 #include <filesystem>
 
+#include "../opengl_texture.h"
+
 // Credit to the ImGui android OpenGL3 example for a lot of this code!
 
 namespace backend {
