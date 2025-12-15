@@ -8,6 +8,7 @@
 #include "power_decimator.h"
 #include "../taps/low_pass.h"
 #include "../window/nuttall.h"
+#include "utils/flog.h"
 
 namespace dsp::multirate {
     template<class T>
@@ -141,7 +142,7 @@ namespace dsp::multirate {
             double actualOutSR = (double)IntSR * (double)interp / (double)decim;
             double error = abs((actualOutSR - _outSamplerate) / _outSamplerate) * 100.0;
             if (error > 0.01) {
-                fprintf(stderr, "Warning: resampling error is over 0.01%%: %lf\n", error);
+                flog::warn("Warning: resampling error is over 0.01%: {}", error);
             }
             
             // If the power decimator already did all the work, don't use the resampler
@@ -159,7 +160,7 @@ namespace dsp::multirate {
             for (unsigned int i = 0; i < rtaps.size; i++) { rtaps.taps[i] *= (float)interp; }
             resamp.setRatio(interp, decim, rtaps);
 
-            printf("[Resamp] predec: %d, interp: %d, decim: %d, inacc: %lf%%, taps: %d\n", predecRatio, interp, decim, error, rtaps.size);
+            flog::info("[Resamp] predec: {}, interp: {}, decim: {}, inacc: {}%, taps: {}", predecRatio, interp, decim, error, rtaps.size);
 
             mode = useDecim ? Mode::BOTH : Mode::RESAMP_ONLY;
         }

@@ -32,7 +32,7 @@ namespace ImGui {
             // Draw buttons
             int bid = 0;
             while (buttons[0]) {
-                int len = strlen(buttons);
+                int len = (int)strlen(buttons);
 
                 // Draw button
                 if (bid) { ImGui::SameLine(); }

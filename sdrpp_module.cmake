@@ -12,6 +12,10 @@ target_link_libraries(${PROJECT_NAME} PRIVATE sdrpp_core)
 target_include_directories(${PROJECT_NAME} PRIVATE "${SDRPP_CORE_ROOT}/src/")
 set_target_properties(${PROJECT_NAME} PROPERTIES PREFIX "")
 
+if(MSVC)
+    target_compile_definitions(${PROJECT_NAME} PUBLIC _CRT_SECURE_NO_WARNINGS)
+endif()
+
 # Set compile arguments
 target_compile_options(${PROJECT_NAME} PRIVATE ${SDRPP_MODULE_COMPILER_FLAGS})
 

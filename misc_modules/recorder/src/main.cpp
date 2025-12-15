@@ -455,7 +455,6 @@ private:
         // Get data
         time_t now = time(0);
         tm* ltm = localtime(&now);
-        char buf[1024];
         double freq = gui::waterfall.getCenterFrequency();
         if (gui::waterfall.vfos.find(name) != gui::waterfall.vfos.end()) {
             freq += gui::waterfall.vfos[name]->generalOffset;

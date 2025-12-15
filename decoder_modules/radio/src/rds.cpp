@@ -414,7 +414,7 @@ namespace rds {
         }
 
         // Reorder chars
-        for (int i = restStr.size() - 1; i >= 0; i--) {
+        for (int i = (int)restStr.size() - 1; i >= 0; i--) {
             callsign += restStr[i];
         }
 

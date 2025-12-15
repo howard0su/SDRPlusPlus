@@ -101,6 +101,8 @@ if (MSVC)
     # ZSTD
     find_package(zstd CONFIG REQUIRED)
     target_link_libraries(sdrpp_core PUBLIC zstd::libzstd_shared)
+
+    target_compile_definitions(sdrpp_core PUBLIC _CRT_SECURE_NO_WARNINGS)
 elseif (ANDROID)
     target_include_directories(sdrpp_core PUBLIC
         /sdr-kit/${ANDROID_ABI}/include

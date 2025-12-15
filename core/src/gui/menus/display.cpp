@@ -70,7 +70,7 @@ namespace displaymenu {
             colorMapNamesTxt += name;
             colorMapNamesTxt += '\0';
             if (name == colormapName) {
-                colorMapId = (colorMapNames.size() - 1);
+                colorMapId = int(colorMapNames.size() - 1);
                 colorMapAuthor = map.author;
             }
         }

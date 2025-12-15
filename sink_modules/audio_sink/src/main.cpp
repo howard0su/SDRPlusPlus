@@ -59,7 +59,7 @@ public:
                 if (!info.probed) { continue; }
 #endif
                 if (info.outputChannels == 0) { continue; }
-                if (info.isDefaultOutput) { defaultDevId = devList.size(); }
+                if (info.isDefaultOutput) { defaultDevId = (int)devList.size(); }
                 devList.push_back(info);
                 deviceIds.push_back(i);
                 txtDevList += info.name;
@@ -241,7 +241,7 @@ private:
     int devId = 0;
     bool running = false;
 
-    unsigned int defaultDevId = 0;
+    int defaultDevId = 0;
 
     std::vector<RtAudio::DeviceInfo> devList;
     std::vector<unsigned int> deviceIds;
