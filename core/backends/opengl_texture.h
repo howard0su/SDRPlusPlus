@@ -1,5 +1,5 @@
 #include "imgui.h"
-#include "opengl/gl.h"
+#include <GLFW/glfw3.h>
 
 namespace backend {
     ImTextureID createTexture(int width, int height, const void* data)
