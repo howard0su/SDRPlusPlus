@@ -2,6 +2,7 @@
     "name": "Russia",
     "country_name": "Russia",
     "country_code": "RU",
+    "itu_region": 1,
     "author_name": "Raov",
     "author_url": "https://twitter.com/UB8QBD",
     "bands": [

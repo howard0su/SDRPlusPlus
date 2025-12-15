@@ -2,6 +2,7 @@
     "name": "Slovakia",
     "country_name": "Slovakia",
     "country_code": "SK",
+    "itu_region": 1,
     "author_name": "Tomas Pytel",
     "author_url": "https://github.com/Pytlicek",
     "bands": [

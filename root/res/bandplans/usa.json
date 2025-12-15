@@ -2,6 +2,7 @@
     "name": "USA",
     "country_name": "United States of America",
     "country_code": "US",
+    "itu_region": 2,
     "author_name": "Joshua Kimsey",
     "author_url": "http://jkimsey.tech",
     "bands": [

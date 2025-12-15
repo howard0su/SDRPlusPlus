@@ -2,6 +2,7 @@
     "name": "Brazilian Ham Bands",
     "country_name": "Brazil",
     "country_code": "BR",
+    "itu_region": 2,
     "author_name": "Rafael Beraldo",
     "author_url": "https://github.com/rberaldo/",
     "bands": [

@@ -2,6 +2,7 @@
     "name": "Ireland",
     "country_name": "Republic Of Ireland",
     "country_code": "IE",
+    "itu_region": 1,
     "author_name": "Oskar Dudek",
     "author_url": "",
     "bands": [

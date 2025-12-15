@@ -40,6 +40,7 @@ namespace bandplan {
             { "name", b.name },
             { "country_name", b.countryName },
             { "country_code", b.countryCode },
+            { "itu_region", b.ituRegion },
             { "author_name", b.authorName },
             { "author_url", b.authorURL },
             { "bands", b.bands }
@@ -50,6 +51,7 @@ namespace bandplan {
         j.at("name").get_to(b.name);
         j.at("country_name").get_to(b.countryName);
         j.at("country_code").get_to(b.countryCode);
+        j.at("itu_region").get_to(b.ituRegion);
         j.at("author_name").get_to(b.authorName);
         j.at("author_url").get_to(b.authorURL);
         j.at("bands").get_to(b.bands);

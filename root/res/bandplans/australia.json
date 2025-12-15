@@ -2,6 +2,7 @@
   "name": "Australia",
   "country_name": "Australia",
   "country_code": "AU",
+  "itu_region": 3,
   "author_name": "Owen",
   "author_url": "https://github.com/Ozies",
   "bands": [

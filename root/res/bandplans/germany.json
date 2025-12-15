@@ -2,6 +2,7 @@
     "name": "Germany",
     "country_name": "Germany",
     "country_code": "DE",
+    "itu_region": 1,
     "author_name": "Manawyrm, LEDFlighter",
     "author_url": "https://tbspace.de",
     "bands": [

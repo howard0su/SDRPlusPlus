@@ -2,6 +2,7 @@
     "name": "France",
     "country_name": "France",
     "country_code": "FR",
+    "itu_region": 1,
     "author_name": "Fred F4EED, Armand31",
     "author_url": "http://f4eed.wordpress.com, https://github.com/Armand31",
     "bands": [

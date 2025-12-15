@@ -2,6 +2,7 @@
     "name": "German LTE bands",
     "country_name": "Germany",
     "country_code": "DE",
+    "itu_region": 1,
     "author_name": "Martin Hauke",
     "author_url": "none",
     "bands": [

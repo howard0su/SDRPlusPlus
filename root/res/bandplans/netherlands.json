@@ -2,6 +2,7 @@
     "name": "Netherlands",
     "country_name": "Netherlands",
     "country_code": "NL",
+    "itu_region": 1,
     "author_name": "Davide Rovelli",
     "author_url": "http://daviderud.altervista.org",
     "bands": [

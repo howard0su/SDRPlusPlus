@@ -2,6 +2,7 @@
   "name": "Turkey",
   "country_name": "Turkey",
   "country_code": "TR",
+  "itu_region": 1,
   "author_name": "Yunus TA2PEA",
   "author_url": "https://github.com/ycanerol",
   "bands": [

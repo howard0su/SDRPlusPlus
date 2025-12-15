@@ -2,6 +2,7 @@
     "name": "Republic of Korea",
     "country_name": "Republic of Korea",
     "country_code": "KR",
+    "itu_region": 3,
     "author_name": "SeoyeonBae",
     "author_url": "https://github.com/bsy0317",
     "bands": [

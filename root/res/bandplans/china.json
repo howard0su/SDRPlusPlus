@@ -2,6 +2,7 @@
     "name": "China (Mainland)",
     "country_name": "People's Republic of China",
     "country_code": "CN",
+    "itu_region": 3,
     "author_name": "Shuyuan Liu",
     "author_url": "https://github.com/shuyuan-liu",
     "bands": [

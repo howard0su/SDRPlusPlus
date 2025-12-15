@@ -2,6 +2,7 @@
   "name": "Canada",
   "country_name": "Canada",
   "country_code": "CA",
+  "itu_region": 2,
   "author_name": "Cam VE3KCN",
   "author_url": "https://github.com/CamK06/",
   "bands": [

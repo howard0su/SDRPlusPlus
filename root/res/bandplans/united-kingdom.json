@@ -2,6 +2,7 @@
     "name": "UK",
     "country_name": "United Kingdom",
     "country_code": "UK",
+    "itu_region": 1,
     "author_name": "John Donkersley",
     "author_url": "",
     "bands": [

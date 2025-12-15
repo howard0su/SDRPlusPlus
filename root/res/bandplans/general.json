@@ -2,6 +2,7 @@
     "name": "General",
     "country_name": "Worldwide",
     "country_code": "--",
+    "itu_region": 1,
     "author_name": "Ryzerth",
     "author_url": "https://github.com/AlexandreRouma",
     "bands": [

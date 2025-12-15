@@ -20,6 +20,7 @@ namespace bandplan {
         std::string name;
         std::string countryName;
         std::string countryCode;
+        int ituRegion;
         std::string authorName;
         std::string authorURL;
         std::vector<Band_t> bands;

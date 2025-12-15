@@ -2,6 +2,7 @@
   "name": "Belgium",
   "country_name": "Belgium",
   "country_code": "BE",
+  "itu_region": 1,
   "author_name": "Bastien Cabay - ON4BCY",
   "author_url": "https://qrz.com/db/ON4BCY",
   "bands": [

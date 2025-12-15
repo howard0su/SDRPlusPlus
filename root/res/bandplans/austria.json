@@ -2,6 +2,7 @@
     "name": "Austria",
     "country_name": "Austria",
     "country_code": "AT",
+    "itu_region": 1,
     "author_name": "Michael Mangeng",
     "author_url": "https://vis.at",
     "bands": [

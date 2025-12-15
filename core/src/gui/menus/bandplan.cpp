@@ -62,6 +62,7 @@ namespace bandplanmenu {
         }
         bandplan::BandPlan_t plan = bandplan::bandplans[bandplan::bandplanNames[bandplanId]];
         ImGui::Text("Country: %s (%s)", plan.countryName.c_str(), plan.countryCode.c_str());
+        ImGui::Text("ITU Region: %d", plan.ituRegion);
         ImGui::Text("Author: %s", plan.authorName.c_str());
     }
 };
