@@ -21,6 +21,7 @@ cp -Force $build_dir/source_modules/audio_source/RelWithDebInfo/audio_source.dll
 cp -Force $build_dir/source_modules/file_source/RelWithDebInfo/file_source.dll sdrpp_windows_x64/modules/
 cp -Force $build_dir/source_modules/network_source/RelWithDebInfo/network_source.dll sdrpp_windows_x64/modules/
 cp -Force $build_dir/source_modules/sddc_source/RelWithDebInfo/sddc_source.dll sdrpp_windows_x64/modules/
+cp -Force $build_dir/source_modules/file_source/RelWithDebInfo/file_source.dll sdrpp_windows_x64/modules/
 
 
 # Copy sink modules

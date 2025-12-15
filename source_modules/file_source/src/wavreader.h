@@ -1,6 +1,6 @@
 #pragma once
 
-#pragma once
+#include "reader.h"
 #include <stdint.h>
 #include <string.h>
 #include <fstream>
@@ -11,7 +11,7 @@
 #define WAV_DATA_MARK       "data"
 #define WAV_SAMPLE_TYPE_PCM 1
 
-class WavReader {
+class WavReader : public AudioReader {
 public:
     WavReader(std::string path) {
         file = std::ifstream(path.c_str(), std::ios::binary);
@@ -20,38 +20,42 @@ public:
         if (memcmp(hdr.signature, "RIFF", 4) != 0) { return; }
         if (memcmp(hdr.fileType, "WAVE", 4) != 0) { return; }
         valid = true;
+        dataOffset = sizeof(WavHeader_t);
+        dataSize = hdr.dataSize;
     }
 
-    uint16_t getBitDepth() {
+    uint16_t getBitDepth() override {
         return hdr.bitDepth;
     }
 
-    uint16_t getChannelCount() {
+    uint16_t getChannelCount() override {
         return hdr.channelCount;
     }
 
-    uint32_t getSampleRate() {
+    uint32_t getSampleRate() override {
         return hdr.sampleRate;
     }
 
-    bool isValid() {
+    bool isValid() override {
         return valid;
     }
 
-    void readSamples(void* data, size_t size) {
+    void readSamples(void* data, size_t size) override {
         char* _data = (char*)data;
         file.read(_data, size);
         int read = file.gcount();
-        if (read < size) {
+        if (read < (int)size) {
             file.clear();
-            file.seekg(sizeof(WavHeader_t));
+            file.seekg(dataOffset);
             file.read(&_data[read], size - read);
+            read += file.gcount();
         }
-        bytesRead += size;
+        bytesRead += read;
     }
 
-    void rewind() {
-        file.seekg(sizeof(WavHeader_t));
+    void rewind() override {
+        file.clear();
+        file.seekg(dataOffset);
     }
 
     void close() {
@@ -79,4 +83,6 @@ private:
     std::ifstream file;
     size_t bytesRead = 0;
     WavHeader_t hdr;
+    uint32_t dataOffset = 0;
+    uint32_t dataSize = 0;
 };

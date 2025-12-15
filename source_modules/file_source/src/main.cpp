@@ -4,7 +4,9 @@
 #include <module.h>
 #include <gui/gui.h>
 #include <signal_path/signal_path.h>
-#include <wavreader.h>
+#include "reader.h"
+#include "wavreader.h"
+#include "aureader.h"
 #include <core.h>
 #include <gui/widgets/file_select.h>
 #include <filesystem>
@@ -27,7 +29,7 @@ ConfigManager config;
 
 class FileSourceModule : public ModuleManager::Instance {
 public:
-    FileSourceModule(std::string name) : fileSelect("", { "Wav IQ Files (*.wav)", "*.wav", "All Files", "*" }) {
+    FileSourceModule(std::string name) : fileSelect("", { "Wav IQ Files (*.wav)", "*.wav", "Sound IQ Files (*.au)", "*.au", "All Files", "*" }) {
         this->name = name;
 
         if (core::args["server"].b()) { return; }
@@ -123,12 +125,16 @@ private:
                     delete _this->reader;
                 }
                 try {
-                    _this->reader = new WavReader(_this->fileSelect.path);
-                    if (_this->reader->getSampleRate() == 0) {
-                        _this->reader->close();
-                        delete _this->reader;
-                        _this->reader = NULL;
-                        throw std::runtime_error("Sample rate may not be zero");
+                    std::string ext = std::filesystem::path(_this->fileSelect.path).extension().string();
+                    std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+                    if (ext == ".au") {
+                        _this->reader = new AuReader(_this->fileSelect.path);
+                    } else {
+                        _this->reader = new WavReader(_this->fileSelect.path);
+                    }
+                    if (_this->reader == NULL || _this->reader->getSampleRate() == 0) {
+                        if (_this->reader) { _this->reader->close(); delete _this->reader; _this->reader = NULL; }
+                        throw std::runtime_error("Sample rate may not be zero or reader invalid");
                     }
                     _this->sampleRate = _this->reader->getSampleRate();
                     core::setInputSampleRate(_this->sampleRate);
@@ -193,7 +199,7 @@ private:
     std::string name;
     dsp::stream<dsp::complex_t> stream;
     SourceManager::SourceHandler handler;
-    WavReader* reader = NULL;
+    AudioReader* reader = NULL;
     bool running = false;
     bool enabled = true;
     float sampleRate = 1000000;
