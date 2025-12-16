@@ -1,21 +1,23 @@
 #pragma once
 #include "../demod.h"
-#include <dsp/demod/am.h>
+#include <dsp/demod/sam.h>
 
 namespace demod {
-    class AM : public Demodulator {
+    class SAM : public Demodulator {
     public:
-        AM() {}
+        SAM() {}
 
-        AM(std::string name, ConfigManager* config, dsp::stream<dsp::complex_t>* input, double bandwidth, double audioSR) {
+        SAM(std::string name, ConfigManager* config, dsp::stream<dsp::complex_t>* input, double bandwidth, double audioSR) {
             init(name, config, input, bandwidth, audioSR);
         }
 
-        ~AM() { stop(); }
+        ~SAM() { stop(); }
 
         void init(std::string name, ConfigManager* config, dsp::stream<dsp::complex_t>* input, double bandwidth, double audioSR) {
             this->name = name;
             _config = config;
+
+            _mode = dsp::demod::SAM<dsp::stereo_t>::SAM_MODE;
 
             // Load config
             config->acquire();
@@ -32,7 +34,9 @@ namespace demod {
 
             // Define structure
             demod.init(input,
-                       carrierAgc ? dsp::demod::AM<dsp::stereo_t>::AGCMode::CARRIER : dsp::demod::AM<dsp::stereo_t>::AGCMode::AUDIO,
+                       _mode,
+                       carrierAgc ? dsp::demod::SAM<dsp::stereo_t>::AGCMode::CARRIER : dsp::demod::SAM<dsp::stereo_t>::AGCMode::AUDIO,
+                       dsp::demod::SAM<dsp::stereo_t>::PLLSpeed::MEDIUM,
                        bandwidth,
                        agcAttack / getIFSampleRate(),
                        agcDecay / getIFSampleRate(),
@@ -63,9 +67,22 @@ namespace demod {
                 _config->release(true);
             }
             if (ImGui::Checkbox(("Carrier AGC##_radio_am_carrier_agc_" + name).c_str(), &carrierAgc)) {
-                demod.setAGCMode(carrierAgc ? dsp::demod::AM<dsp::stereo_t>::AGCMode::CARRIER : dsp::demod::AM<dsp::stereo_t>::AGCMode::AUDIO);
+                demod.setAGCMode(carrierAgc ? dsp::demod::SAM<dsp::stereo_t>::AGCMode::CARRIER : dsp::demod::SAM<dsp::stereo_t>::AGCMode::AUDIO);
                 _config->acquire();
                 _config->conf[name][getName()]["carrierAgc"] = carrierAgc;
+                _config->release(true);
+            }
+            bool stero = (_mode == dsp::demod::SAM<dsp::stereo_t>::STEREO);
+            if (ImGui::Checkbox(("Stereo Mode##_radio_sam_stereo_mode_" + name).c_str(), &stero)) {
+                if (!stero) {
+                    _mode = dsp::demod::SAM<dsp::stereo_t>::SAM_MODE;
+                }
+                else {
+                    _mode = dsp::demod::SAM<dsp::stereo_t>::STEREO;
+                }
+                demod.setMode(_mode);
+                _config->acquire();
+                _config->conf[name][getName()]["stereoMode"] = (_mode == dsp::demod::SAM<dsp::stereo_t>::STEREO);
                 _config->release(true);
             }
         }
@@ -95,13 +112,14 @@ namespace demod {
         dsp::stream<dsp::stereo_t>* getOutput() { return &demod.out; }
 
     private:
-        dsp::demod::AM<dsp::stereo_t> demod;
-
+        dsp::demod::SAM<dsp::stereo_t> demod;
+        dsp::demod::SAM<dsp::stereo_t>::Mode _mode;
         ConfigManager* _config = NULL;
 
         float agcAttack = 50.0f;
         float agcDecay = 5.0f;
         bool carrierAgc = false;
+
 
         std::string name;
     };

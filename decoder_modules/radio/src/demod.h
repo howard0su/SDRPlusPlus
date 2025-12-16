@@ -57,3 +57,4 @@ namespace demod {
 #include "demodulators/dsb.h"
 #include "demodulators/cw.h"
 #include "demodulators/raw.h"
+#include "demodulators/sam.h"
