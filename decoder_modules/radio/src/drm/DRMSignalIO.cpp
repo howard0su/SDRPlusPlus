@@ -30,8 +30,6 @@
 #include "UpsampleFilter.h"
 #include <iostream>
 #include "sound/sound.h"
-#include "sound/AudioFileIn.h"
-#include "util/FileTyper.h"
 #include "matlib/MatlibSigProToolbox.h"
 
 using namespace std;
@@ -302,22 +300,9 @@ CReceiveData::SetSoundInterface(string device)
         delete pSound;
         pSound = nullptr;
     }
-    FileTyper::type t = FileTyper::resolve(device);
-    if(t != FileTyper::unrecognised) {
-        CAudioFileIn* pAudioFileIn = new CAudioFileIn();
-        pAudioFileIn->SetFileName(device, t);
-        int sr = pAudioFileIn->GetSampleRate();
-        if(iSampleRate!=sr) {
-            // TODO
-            //cerr << "file sample rate is " << sr << endl;
-            iSampleRate = sr;
-        }
-        pSound = pAudioFileIn;
-    }
-    else {
-        pSound = new CSoundIn();
-        pSound->SetDev(device);
-    }
+
+    pSound = new CSoundIn();
+    pSound->SetDev(device);
 }
 
 void CReceiveData::ProcessDataInternal(CParameter& Parameters)

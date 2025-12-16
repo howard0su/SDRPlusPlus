@@ -29,10 +29,9 @@
 #ifndef _SOUND_H
 #define _SOUND_H
 
-#include "soundnull.h"
-typedef CSoundInNull CSoundIn;
+#include "virtual_sound.h"
 
-#include "drm_kiwiaudio.h"
-typedef CSoundOutKiwi CSoundOut;
+typedef CVirtualSoundIn CSoundIn;
+typedef CVirtualSoundOut CSoundOut;
 
 #endif

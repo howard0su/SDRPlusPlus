@@ -267,34 +267,7 @@ CPlotManager::GetInputPSD(CVector<_REAL>& vecrData, CVector<_REAL>& vecrScale)
 {
     CParameter& Parameters = *pReceiver->GetParameters();
 
-    if (pReceiver->GetRSIIn()->GetInEnabled())
-    {
-        // read it from the parameter structure
-        Parameters.Lock();
-        CVector<_REAL>& vecrPSD = Parameters.vecrPSD;
-        Parameters.Unlock();
-
-        int iVectorLen = vecrPSD.Size();
-        vecrData.Init(iVectorLen);
-        vecrScale.Init(iVectorLen);
-
-        // starting frequency and frequency step as defined in TS 102 349
-        // plot expects the scale values in kHz
-        _REAL f = _REAL(-7.875) + VIRTUAL_INTERMED_FREQ/_REAL(1000.0);
-        const _REAL fstep =_REAL(0.1875);
-
-        for (int i=0; i<iVectorLen; i++)
-        {
-            vecrData[i] = vecrPSD[i];
-            vecrScale[i] = f;
-            f += fstep;
-        }
-
-    }
-    else
-    {
-        pReceiver->GetReceiveData()->GetInputPSD(vecrData, vecrScale);
-    }
+    pReceiver->GetReceiveData()->GetInputPSD(vecrData, vecrScale);
 }
 
 void CPlotManager::GetTransferFunction(CVector<_REAL>& vecrData,
@@ -311,44 +284,8 @@ void CPlotManager::GetAvPoDeSp(CVector<_REAL>& vecrData, CVector<_REAL>& vecrSca
 {
     CParameter& Parameters = *pReceiver->GetParameters();
 
-    if (pReceiver->GetRSIIn()->GetInEnabled())
-    {
-        // read it from the parameter structure
-        Parameters.Lock();
-        CVector<_REAL>& vecrPIR = Parameters.vecrPIR;
-        _REAL rPIRStart = Parameters.rPIRStart;
-        _REAL rPIREnd = Parameters.rPIREnd;
-        Parameters.Unlock();
-
-        int iVectorLen = vecrPIR.Size();
-        vecrData.Init(iVectorLen);
-        vecrScale.Init(iVectorLen);
-
-        // starting frequency and frequency step as defined in TS 102 349
-        // plot expects the scale values in kHz
-        _REAL t = rPIRStart;
-        const _REAL tstep = (rPIREnd-rPIRStart)/(_REAL(iVectorLen)-1);
-
-        for (int i=0; i<iVectorLen; i++)
-        {
-            vecrData[i] = vecrPIR[i];
-            vecrScale[i] = t;
-            t += tstep;
-        }
-
-        rLowerBound = _REAL(0);
-        rHigherBound = _REAL(0);
-        rStartGuard = _REAL(0);
-        rEndGuard = _REAL(0);
-        rPDSBegin = _REAL(0);
-        rPDSEnd = _REAL(0);
-
-    }
-    else
-    {
-        pReceiver->GetChannelEstimation()->GetAvPoDeSp(vecrData, vecrScale, rLowerBound, rHigherBound,
-                rStartGuard, rEndGuard, rPDSBegin, rPDSEnd);
-    }
+    pReceiver->GetChannelEstimation()->GetAvPoDeSp(vecrData, vecrScale, rLowerBound, rHigherBound,
+            rStartGuard, rEndGuard, rPDSBegin, rPDSEnd);
 }
 
 void CPlotManager::GetSNRProfile(CVector<_REAL>& vecrData, CVector<_REAL>& vecrScale)

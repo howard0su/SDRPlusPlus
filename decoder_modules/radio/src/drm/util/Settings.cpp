@@ -45,7 +45,6 @@
 #include <cstring>
 #include <cstdlib>
 using namespace std;
-#include "FileTyper.h"
 
 /* Implementation *************************************************************/
 
@@ -205,18 +204,8 @@ CSettings::IsReceiver(const char *argv0)
 void
 CSettings::FileArg(const string& str)
 {
-    // Identify the type of file
-    FileTyper::type t = FileTyper::resolve(str);
-    if(FileTyper::is_rxstat(t))
-    {
-		// it's an RSI or MDI input file
-		Put("command", "rsiin", str);
-	}
-	else
-	{
-		// its an I/Q or I/F file
-		Put("command", "fileio", str);
-	}
+	// its an I/Q or I/F file
+	Put("command", "fileio", str);
 }
 /* Command line argument parser ***********************************************/
 void

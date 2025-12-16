@@ -36,12 +36,10 @@
 
 #include "util/Settings.h"
 #include "util/Utilities.h"
-#include "util/FileTyper.h"
 
 // #include "mode.h"
 #include "sound/sound.h"
 #include "sound/soundnull.h"
-#include "sound/AudioFileIn.h"
 
 #if 0
 #include <fcd.h>
@@ -59,7 +57,7 @@ CDRMReceiver::CDRMReceiver(CSettings* nPsettings) : CDRMTransceiver(),
     ChannelEstimation(),
     UtilizeFACData(), UtilizeSDCData(), MSCDemultiplexer(),
     AudioSourceDecoder(),
-    pUpstreamRSCI(new CUpstreamDI()), DecodeRSIMDI(), downstreamRSCI(),
+    DecodeRSIMDI(),
     RSIPacketBuf(),
     MSCDecBuf(MAX_NUM_STREAMS), MSCUseBuf(MAX_NUM_STREAMS),
     MSCSendBuf(MAX_NUM_STREAMS), iAcquRestartCnt(0),
@@ -71,7 +69,6 @@ CDRMReceiver::CDRMReceiver(CSettings* nPsettings) : CDRMTransceiver(),
     PlotManager(), iPrevSigSampleRate(0),Parameters(*(new CParameter())), pSettings(nPsettings)
 {
     Parameters.SetReceiver(this);
-    downstreamRSCI.SetReceiver(this);
     PlotManager.SetReceiver(this);
 #ifdef HAVE_LIBGPS
     Parameters.gps_data.gps_fd = -1;
@@ -81,7 +78,6 @@ CDRMReceiver::CDRMReceiver(CSettings* nPsettings) : CDRMTransceiver(),
 
 CDRMReceiver::~CDRMReceiver()
 {
-    delete pUpstreamRSCI;
 }
 
 void
@@ -90,50 +86,12 @@ CDRMReceiver::SetInputDevice(string s)
     //ReceiveData.SetTrigger();
 	ReceiveData.Stop();
 	ReceiveData.ClearInputData();
-	/* Get a fresh CUpstreamDI interface */
-	if (pUpstreamRSCI->GetInEnabled())
-	{
-		delete pUpstreamRSCI;
-		pUpstreamRSCI = new CUpstreamDI();
-	}
-    string device = s;
-	FileTyper::type t = FileTyper::resolve(device);
-	if (t == FileTyper::unrecognised) {
-		vector<string> names;
-		vector<string> descriptions;
-		ReceiveData.Enumerate(names, descriptions);
-		if (names.size() > 0) {
-			if (device == "") {
-				device = names[0];
-				t = FileTyper::pcm;
-			}
-			else {
-                for (unsigned i = 0; i<names.size(); i++) {
-					if (device == names[i]) {
-						device = names[i];
-						t = FileTyper::pcm;
-						break;
-					}
-				}
-			}
-		}
-	}
-    switch(t) {
-    case FileTyper::pcm:
-    case FileTyper::pipe:
-        /* SetSyncInput to false, can be modified by pUpstreamRSCI */
-        InputResample.SetSyncInput(false);
-        SyncUsingPil.SetSyncInput(false);
-        TimeSync.SetSyncInput(false);
-        ReceiveData.SetSoundInterface(device); // audio input
-        break;
-    case FileTyper::unrecognised: // includes rsi network
-    case FileTyper::pcap:
-    case FileTyper::file_framing:
-    case FileTyper::raw_af:
-    case FileTyper::raw_pft:
-        pUpstreamRSCI->SetOrigin(device);
-    }
+
+    /* SetSyncInput to false, can be modified by pUpstreamRSCI */
+    InputResample.SetSyncInput(false);
+    SyncUsingPil.SetSyncInput(false);
+    TimeSync.SetSyncInput(false);
+    ReceiveData.SetSoundInterface(""); // audio input
 }
 
 void
@@ -325,11 +283,6 @@ CDRMReceiver::UtilizeDRM(bool& bEnoughData)
 void
 CDRMReceiver::DetectAcquiFAC()
 {
-    /* If upstreamRSCI in is enabled, do not check for acquisition state because we want
-       to stay in tracking mode all the time */
-    if (pUpstreamRSCI->GetInEnabled())
-        return;
-
     /* Acquisition switch */
     if (!UtilizeFACData.GetCRCOk())
     {
@@ -484,31 +437,6 @@ CDRMReceiver::SetInStartMode()
     Parameters.audiodecoder = "";
 
     Parameters.Unlock();
-
-    /* In case upstreamRSCI is enabled, go directly to tracking mode, do not activate the
-       synchronization units */
-    if (pUpstreamRSCI->GetInEnabled())
-    {
-        /* We want to have as low CPU usage as possible, therefore set the
-           synchronization units in a state where they do only a minimum
-           work */
-        FreqSyncAcq.StopAcquisition();
-        TimeSync.StopTimingAcqu();
-        InputResample.SetSyncInput(true);
-        SyncUsingPil.SetSyncInput(true);
-
-        /* This is important so that always the same amount of module input
-           data is queried, otherwise it could be that amount of input data is
-           set to zero and the receiver gets into an infinite loop */
-        TimeSync.SetSyncInput(true);
-
-        /* Always tracking mode for upstreamRSCI */
-        Parameters.Lock();
-        Parameters.eAcquiState = AS_WITH_SIGNAL;
-        Parameters.Unlock();
-
-        SetInTrackingMode();
-    }
 }
 
 void
@@ -553,34 +481,6 @@ CDRMReceiver::process()
     bool bFrameToSend = false;
     bool bEnoughData = true;
 
-    /* Input - from upstream RSCI or input and demodulation from sound card / file */
-    if (pUpstreamRSCI->GetInEnabled())
-    {
-        RSIPacketBuf.Clear();
-        pUpstreamRSCI->ReadData(Parameters, RSIPacketBuf);
-        if (RSIPacketBuf.GetFillLevel() > 0)
-        {
-            time_keeper = time(nullptr);
-            DecodeRSIMDI.ProcessData(Parameters, RSIPacketBuf, FACDecBuf, SDCDecBuf, MSCDecBuf);
-            PlotManager.UpdateParamHistoriesRSIIn();
-            bFrameToSend = true;
-        }
-        else
-        {
-            time_t now = time(nullptr);
-            if ((now - time_keeper) > 2)
-            {
-                Parameters.ReceiveStatus.InterfaceI.SetStatus(NOT_PRESENT);
-                Parameters.ReceiveStatus.InterfaceO.SetStatus(NOT_PRESENT);
-                Parameters.ReceiveStatus.TSync.SetStatus(NOT_PRESENT);
-                Parameters.ReceiveStatus.FSync.SetStatus(NOT_PRESENT);
-                Parameters.ReceiveStatus.FAC.SetStatus(NOT_PRESENT);
-                Parameters.ReceiveStatus.SDC.SetStatus(NOT_PRESENT);
-                Parameters.ReceiveStatus.SLAudio.SetStatus(NOT_PRESENT);
-            }
-        }
-    }
-    else
     {
 
         /* No I/Q recording then receive data directly in DemodDataBuf */
@@ -611,36 +511,6 @@ CDRMReceiver::process()
         bEnoughData = false;
 
         UtilizeDRM(bEnoughData);
-    }
-
-    /* Output to downstream RSCI */
-    if (downstreamRSCI.GetOutEnabled())
-    {
-        if (Parameters.eAcquiState == AS_NO_SIGNAL)
-        {
-            /* we will get one of these between each FAC block, and occasionally we */
-            /* might get two, so don't start generating free-wheeling RSCI until we've. */
-            /* had three in a row */
-            if (FreqSyncAcq.GetUnlockedFrameBoundary())
-            {
-                if (iUnlockedCount < MAX_UNLOCKED_COUNT)
-                    iUnlockedCount++;
-                else
-                    downstreamRSCI.SendUnlockedFrame(Parameters);
-            }
-        }
-        else if (bFrameToSend)
-        {
-            downstreamRSCI.SendLockedFrame(Parameters, FACSendBuf, SDCSendBuf, MSCSendBuf);
-            iUnlockedCount = 0;
-            bFrameToSend = false;
-        }
-    }
-
-    /* Check for RSCI commands */
-    if (downstreamRSCI.GetInEnabled())
-    {
-        downstreamRSCI.poll();
     }
 
     /* Play and/or save the audio */
@@ -692,23 +562,14 @@ void CDRMReceiver::updatePosition()
 void
 CDRMReceiver::InitsForAllModules()
 {
-    if (downstreamRSCI.GetOutEnabled())
-    {
-        Parameters.bMeasureDelay = true;
-        Parameters.bMeasureDoppler = true;
-        Parameters.bMeasureInterference = true;
+
+    Parameters.bMeasureDelay = false;
+    Parameters.bMeasureDoppler = false;
+    Parameters.bMeasureInterference = false;
+    if(Parameters.bMeasurePSDAlways)
         Parameters.bMeasurePSD = true;
-    }
     else
-    {
-        Parameters.bMeasureDelay = false;
-        Parameters.bMeasureDoppler = false;
-        Parameters.bMeasureInterference = false;
-        if(Parameters.bMeasurePSDAlways)
-            Parameters.bMeasurePSD = true;
-        else
-            Parameters.bMeasurePSD = false;
-    }
+        Parameters.bMeasurePSD = false;
 
     /* Set init flags */
     SplitFAC.SetInitFlag();
@@ -748,9 +609,6 @@ CDRMReceiver::InitsForAllModules()
     SplitAudio.SetInitFlag();
 
     SplitForIQRecord.SetInitFlag();
-
-    pUpstreamRSCI->SetInitFlag();
-    //downstreamRSCI.SetInitFlag();
 
     /* Clear all buffers (this is especially important for the "AudSoDecBuf"
        buffer since AM mode and DRM mode use the same buffer. When init is
@@ -934,11 +792,6 @@ void CDRMReceiver::SetFrequency(int iNewFreqkHz)
     Parameters.SetFrequency(iNewFreqkHz);
     Parameters.Unlock();
 
-    if (pUpstreamRSCI->GetOutEnabled())
-    {
-        pUpstreamRSCI->SetFrequency(iNewFreqkHz);
-    }
-
 #if 0
 	{
 		FCD_MODE_ENUM fme;
@@ -959,14 +812,6 @@ void CDRMReceiver::SetFrequency(int iNewFreqkHz)
 		}
 	}
 #endif
-    if (downstreamRSCI.GetOutEnabled())
-        downstreamRSCI.NewFrequency(Parameters);
-}
-
-void
-CDRMReceiver::SetRSIRecording(bool bOn, const char cProfile)
-{
-    downstreamRSCI.SetRSIRecording(Parameters, bOn, cProfile);
 }
 
 /* TEST store information about alternative frequency transmitted in SDC */
@@ -1094,46 +939,6 @@ CDRMReceiver::LoadSettings()
         SetOutputDevice(str);
     } else {
     }
-
-    str = s.Get("command", "rciout");
-    if (str != "")
-        pUpstreamRSCI->SetDestination(str);
-
-    /* downstream RSCI */
-	string rsiout = s.Get("command", "rsiout", string(""));
-	string rciin = s.Get("command", "rciin", string(""));
-	if(rsiout != "" || rciin != "")
-	{
-		istringstream cc(rciin);
-		vector<string> rci;
-		while(cc >> str)
-		{
-			rci.push_back(str);
-		}
-		istringstream ss(rsiout);
-		size_t n=0;
-		while(ss >> str)
-		{
-			char profile = str[0];
-			string dest = str.substr(2);
-			if(rci.size()>n)
-			{
-				downstreamRSCI.AddSubscriber(dest, profile, rci[n]);
-				n++;
-			}
-			else
-			{
-				downstreamRSCI.AddSubscriber(dest, profile);
-			}
-		}
-		for(;n<rci.size(); n++)
-			downstreamRSCI.AddSubscriber("", ' ', rci[n]);
-    }
-    /* RSCI File Recording */
-    str = s.Get("command", "rsirecordprofile");
-    string s2 = s.Get("command", "rsirecordtype");
-    if (str != "" || s2 != "")
-        downstreamRSCI.SetRSIRecording(Parameters, true, str[0], s2);
 
     /* Mute audio flag */
     WriteData.MuteAudio(s.Get("Receiver", "muteaudio", false));

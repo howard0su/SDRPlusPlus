@@ -168,11 +168,6 @@ public:
     EAcqStat				GetAcquiState() {
         return Parameters.GetAcquiState();
     }
-    bool GetDownstreamRSCIOutEnabled()
-    {
-        return downstreamRSCI.GetOutEnabled();
-    }
-
     void					SetInitResOff(_REAL rNRO)
     {
         rInitResampleOffset = rNRO;
@@ -274,12 +269,6 @@ public:
     CAudioSourceDecoder*	GetAudSorceDec() {
         return &AudioSourceDecoder;
     }
-    CUpstreamDI*			GetRSIIn() {
-        return pUpstreamRSCI;
-    }
-    CDownstreamDI*			GetRSIOut() {
-        return &downstreamRSCI;
-    }
     CChannelEstimation*		GetChannelEstimation() {
         return &ChannelEstimation;
     }
@@ -349,9 +338,7 @@ protected:
     CSplitMSC				SplitMSC[MAX_NUM_STREAMS];
     CConvertAudio			ConvertAudio;
 
-    CUpstreamDI*			pUpstreamRSCI;
     CDecodeRSIMDI			DecodeRSIMDI;
-    CDownstreamDI			downstreamRSCI;
 
     /* Buffers */
     CCyclicBuffer<_REAL>			DemodDataBuf;
