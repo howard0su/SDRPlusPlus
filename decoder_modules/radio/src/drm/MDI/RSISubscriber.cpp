@@ -32,6 +32,7 @@
 
 #include "PacketSocket.h"
 #include "RSISubscriber.h"
+#include "Pft.h"
 #include "../DRMReceiver.h"
 #include "TagPacketGenerator.h"
 

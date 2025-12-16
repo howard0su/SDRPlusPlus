@@ -34,7 +34,6 @@
 
 #include "GlobalDefinitions.h"
 #include <iostream>
-#include "MDI/MDIRSCI.h" /* OPH: need this near the top so winsock2 is included before winsock */
 #include "MDI/MDIDecode.h"
 #include "Parameter.h"
 #include "util/Buffer.h"

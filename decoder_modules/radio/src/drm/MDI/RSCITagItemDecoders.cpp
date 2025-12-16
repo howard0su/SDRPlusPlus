@@ -36,6 +36,7 @@
 
 
 #include "RSCITagItemDecoders.h"
+#include "RSISubscriber.h"
 #include "../DRMReceiver.h"
 #include <time.h>
 #include <stdlib.h>
