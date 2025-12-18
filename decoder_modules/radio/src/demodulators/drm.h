@@ -42,7 +42,7 @@ namespace demod {
         void stop() {
             drmReceiver->stop();
         }
- 
+
         void showMenu() {
             // Display DRM Receiver Parameters
             auto Parameters = drmReceiver->GetParameters();
@@ -66,12 +66,15 @@ namespace demod {
             ImGui::SameLine();
             DrawIndicator("LL", ReceiveStatus.LLAudio.GetStatus());
             ImGui::NewLine();
-                                    
+
+            if (snr == 0.0f)
+                return;
+
             if (ImPlot::BeginPlot("Constellation", ImVec2(-1, 300), ImPlotFlags_NoMouseText | ImPlotFlags_NoInputs)) {
                 ImPlot::SetupAxes("", "", ImPlotAxisFlags_NoTickLabels, ImPlotAxisFlags_NoTickLabels);
                 ImPlot::SetupAxisLimits(ImAxis_X1, -1.5, 1.5, ImPlotCond_Always);
                 ImPlot::SetupAxisLimits(ImAxis_Y1, -1.5, 1.5, ImPlotCond_Always);
-                
+
                 std::vector<ImPlotPoint> points;
                 CVector<_COMPLEX> vecConstellation;
                 drmReceiver->GetMSCMLC()->GetVectorSpace(vecConstellation);
@@ -110,42 +113,57 @@ namespace demod {
 
                 if (!service.IsActive())
                     continue;
-                
+
                 if (service.eAudDataFlag == CService::SF_AUDIO) {
                     // Display audio codec information
                     auto& audioParam = service.AudioParam;
                     if (audioParam.iStreamID != STREAM_ID_NOT_USED) {
                         const char* codec = "Unknown";
                         switch (audioParam.eAudioCoding) {
-                            case CAudioParam::AC_AAC: codec = "AAC"; break;
-                            case CAudioParam::AC_OPUS: codec = "OPUS"; break;
-                            case CAudioParam::AC_xHE_AAC: codec = "xHE-AAC"; break;
-                            default: codec = "Unknown"; break;
+                        case CAudioParam::AC_AAC:
+                            codec = "AAC";
+                            break;
+                        case CAudioParam::AC_OPUS:
+                            codec = "OPUS";
+                            break;
+                        case CAudioParam::AC_xHE_AAC:
+                            codec = "xHE-AAC";
+                            break;
+                        default:
+                            codec = "Unknown";
+                            break;
                         }
-                        
+
                         const char* mode = "Mono";
                         switch (audioParam.eAudioMode) {
-                            case CAudioParam::AM_MONO: mode = "Mono"; break;
-                            case CAudioParam::AM_P_STEREO: mode = "P-Stereo"; break;
-                            case CAudioParam::AM_STEREO: mode = "Stereo"; break;
-                            default: mode = "Unknown"; break;
+                        case CAudioParam::AM_MONO:
+                            mode = "Mono";
+                            break;
+                        case CAudioParam::AM_P_STEREO:
+                            mode = "P-Stereo";
+                            break;
+                        case CAudioParam::AM_STEREO:
+                            mode = "Stereo";
+                            break;
+                        default:
+                            mode = "Unknown";
+                            break;
                         }
-                        
-                        ImGui::Text("Audio: [%s] %s %s%s", 
+
+                        ImGui::Text("Audio: [%s] %s %s%s",
                                     service.strLabel.c_str(),
-                                    codec, mode, 
+                                    codec, mode,
                                     audioParam.eSBRFlag == CAudioParam::SBR_USED ? " +SBR" : "");
                     }
-                    else 
-                    {
+                    else {
                         continue;
                     }
                 }
                 else if (service.eAudDataFlag == CService::SF_DATA) {
-                        // get data information
-                        auto& dataParam = service.DataParam;
-                        ImGui::SameLine();
-                        ImGui::Text("Data: [%s] Stream ID: %d", service.strLabel.c_str(), dataParam.iStreamID);
+                    // get data information
+                    auto& dataParam = service.DataParam;
+                    ImGui::SameLine();
+                    ImGui::Text("Data: [%s] Stream ID: %d", service.strLabel.c_str(), dataParam.iStreamID);
                 }
                 ImGui::NewLine();
             }
@@ -184,23 +202,29 @@ namespace demod {
     private:
         static ImVec4 GetIndicatorColor(ETypeRxStatus state) {
             switch (state) {
-                case ETypeRxStatus::NOT_PRESENT:        return ImVec4(0.25f, 0.25f, 0.25f, 1.0f); // gray
-                case ETypeRxStatus::CRC_ERROR:  return ImVec4(0.5f, 0.0f, 0.0f, 1.0f); // red
-                case ETypeRxStatus::DATA_ERROR: return ImVec4(0.5f, 0.25f, 0.0f, 1.0f); // orange
-                case ETypeRxStatus::RX_OK:        return ImVec4(0.0f, 0.5f, 0.0f, 1.0f); // green
-                default:
-                    return ImVec4(0.0f, 0.0f, 0.0f, 1.0f); // black
+            case ETypeRxStatus::NOT_PRESENT:
+                return ImVec4(0.25f, 0.25f, 0.25f, 1.0f); // gray
+            case ETypeRxStatus::CRC_ERROR:
+                return ImVec4(0.5f, 0.0f, 0.0f, 1.0f); // red
+            case ETypeRxStatus::DATA_ERROR:
+                return ImVec4(0.5f, 0.25f, 0.0f, 1.0f); // orange
+            case ETypeRxStatus::RX_OK:
+                return ImVec4(0.0f, 0.5f, 0.0f, 1.0f); // green
+            default:
+                return ImVec4(0.0f, 0.0f, 0.0f, 1.0f); // black
             }
         }
 
-        void DrawIndicator(const char* id, ETypeRxStatus state, float radius = 16.0f)
-        {
+        void DrawIndicator(const char* id, ETypeRxStatus state, float radius = 16.0f) {
+            // Account for High-DPI scaling
+            float scaled_radius = radius * style::uiScale;
+
             ImDrawList* draw_list = ImGui::GetWindowDrawList();
             ImVec2 pos = ImGui::GetCursorScreenPos();
-            ImVec2 center = ImVec2(pos.x + radius, pos.y + radius);
+            ImVec2 center = ImVec2(pos.x + scaled_radius, pos.y + scaled_radius);
 
             ImVec4 col = GetIndicatorColor(state);
-            draw_list->AddCircleFilled(center, radius, ImColor(col));
+            draw_list->AddCircleFilled(center, scaled_radius, ImColor(col));
 
             // Draw text centered in the circle
             ImVec2 text_size = ImGui::CalcTextSize(id);
@@ -208,14 +232,14 @@ namespace demod {
             draw_list->AddText(text_pos, IM_COL32(255, 255, 255, 255), id);
 
             // Reserve space for the circle
-            ImGui::Dummy(ImVec2(radius * 2, radius * 2));
+            ImGui::Dummy(ImVec2(scaled_radius * 2, scaled_radius * 2));
         }
+
     private:
         double audioSampleRate;
-        CDRMReceiver *drmReceiver = nullptr;
+        CDRMReceiver* drmReceiver = nullptr;
         CSettings Settings;
 
         std::string name;
-
     };
 }
