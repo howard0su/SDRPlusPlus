@@ -122,7 +122,6 @@ CAudioSourceDecoder::ProcessDataInternal(CParameter & Parameters)
        determining the position for writing the output vector */
     iOutputBlockSize = 0;
     int iResOutBlockSize = 0;
-    flog::debug("audio superframe with {} frames", pAudioSuperFrame->getNumFrames());
 
     int num_frames = pAudioSuperFrame->getNumFrames();
     //u4_t start = timer_us();
@@ -144,7 +143,6 @@ CAudioSourceDecoder::ProcessDataInternal(CParameter & Parameters)
                 if (eDecError == CAudioCodec::DECODER_ERROR_OK) {
                     /* Resample data */
                     iResOutBlockSize = outputSampleRate * vecTempResBufInLeft.Size() / inputSampleRate;
-                    flog::debug("$ ASF {}/{} OK inputSampleRate={} outputSampleRate={}", j, num_frames, inputSampleRate, outputSampleRate);
 
                     // KiwiSDR: comment "NOOP for AAC" not true for us since our outputSampleRate = 12k, not usual soundcard 48k!
                     if (iResOutBlockSize != vecTempResBufOutCurLeft.Size()) { // NOOP for AAC, needed for xHE-AAC
@@ -183,8 +181,6 @@ CAudioSourceDecoder::ProcessDataInternal(CParameter & Parameters)
                     // }
                     ResampleObjL.Resample(vecTempResBufInLeft, vecTempResBufOutCurLeft);
                     ResampleObjR.Resample(vecTempResBufInRight, vecTempResBufOutCurRight);
-                } else {
-                    flog::error("$ ASF {}/{} ERROR inputSampleRate={} outputSampleRate={}", j, num_frames, inputSampleRate, outputSampleRate);
                 }
             }
             else {
