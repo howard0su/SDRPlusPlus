@@ -99,19 +99,6 @@ protected:
 
 
 /* SDC ---------------------------------------------------------------------- */
-class CGenerateSDCData : public CTransmitterModul<_BINARY, _BINARY>
-{
-public:
-    CGenerateSDCData() {}
-    virtual ~CGenerateSDCData() {}
-
-protected:
-    CSDCTransmit SDCTransmit;
-
-    virtual void InitInternal(CParameter& TransmParam);
-    virtual void ProcessDataInternal(CParameter& TransmParam);
-};
-
 class CUtilizeSDCData : public CReceiverModul<_BINARY, _BINARY>
 {
 public:

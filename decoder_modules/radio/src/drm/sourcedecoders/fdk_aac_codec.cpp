@@ -27,8 +27,8 @@
 \******************************************************************************/
 
 #include "fdk_aac_codec.h"
-#include <FDK-AAC/aacenc_lib.h>
-#include <FDK-AAC/FDK_audio.h>
+#include <fdk-aac/aacenc_lib.h>
+#include <fdk-aac/FDK_audio.h>
 #include "SDC/SDC.h"
 #include <cstring>
 #include <utils/flog.h>

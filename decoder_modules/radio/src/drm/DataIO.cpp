@@ -104,18 +104,6 @@ void CUtilizeFACData::InitInternal(CParameter& Parameters)
 /******************************************************************************\
 * SDC data																	   *
 \******************************************************************************/
-/* Transmitter */
-void CGenerateSDCData::ProcessDataInternal(CParameter& TransmParam)
-{
-    SDCTransmit.SDCParam(pvecOutputData, TransmParam);
-}
-
-void CGenerateSDCData::InitInternal(CParameter& TransmParam)
-{
-    /* Define block-size for output */
-    iOutputBlockSize = TransmParam.iNumSDCBitsPerSFrame;
-}
-
 /* Receiver */
 void CUtilizeSDCData::ProcessDataInternal(CParameter& Parameters)
 {

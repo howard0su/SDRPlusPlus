@@ -30,8 +30,8 @@
 #define FDK_AAC_CODEC_H_
 
 #include "AudioCodec.h"
-#include <FDK-AAC/aacdecoder_lib.h>
-#include <FDK-AAC/aacenc_lib.h>
+#include <fdk-aac/aacdecoder_lib.h>
+#include <fdk-aac/aacenc_lib.h>
 
 // #include "timer.h"
 

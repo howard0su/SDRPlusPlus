@@ -46,43 +46,6 @@
 
 
 /* Classes ********************************************************************/
-class CSDCTransmit
-{
-public:
-    CSDCTransmit() {}
-    virtual ~CSDCTransmit();
-
-    void SDCParam(CVector<_BINARY>* pbiData, CParameter& Parameter);
-
-protected:
-    void CommitEnter(CVector<_BINARY>* pbiData, CParameter& Parameter);
-    void CommitFlush();
-    void CommitLeave();
-
-    bool CanTransmitCurrentTime(CParameter& Parameter);
-
-    void DataEntityType0(CVector<_BINARY>& vecbiData, CParameter& Parameter);
-    void DataEntityType1(CVector<_BINARY>& vecbiData, int ServiceID,
-                         CParameter& Parameter);
-// ...
-    void DataEntityType5(CVector<_BINARY>& vecbiData, int ServiceID,
-                         CParameter& Parameter);
-// ...
-    void DataEntityType8(CVector<_BINARY>& vecbiData, int ServiceID,
-                         CParameter& Parameter);
-    void DataEntityType9(CVector<_BINARY>& vecbiData, int ServiceID,
-                         CParameter& Parameter);
-
-    CCRC CRCObject;
-    CVector<_BINARY>* pbiData;
-    CVector<_BINARY> vecbiData;
-    int iNumUsedBits;
-    int iMaxNumBitsDataBlocks;
-    int iLengthDataFieldBytes;
-    int iUsefulBitsSDC;
-    int iLastMinuteTransmitted;
-};
-
 class CSDCReceive
 {
 public:
