@@ -1,5 +1,6 @@
 #include "ImOsmRichMapPlot.h"
 #include "ImOsmIRichItem.h"
+#include <algorithm>
 
 namespace ImOsm {
 namespace Rich {

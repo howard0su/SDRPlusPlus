@@ -79,7 +79,7 @@ void MarkItem::updateRadiusPoints() {
   LatLon::destination(lat, lon, _geoCoords.lat, _geoCoords.lon, _r, {});
   const double x{lon2x(lon)}, y{lat2y(lat)};
   const double r{
-      sqrt(std::pow(x - _osmCoords.x, 2.0) + std::pow(y - _osmCoords.y, 2.0))};
+      sqrt(pow(x - _osmCoords.x, 2.0) + pow(y - _osmCoords.y, 2.0))};
   const double dphi{_dphi * LatLon::RAD};
   const double x0{x}, y0{y + r};
   double phi{};

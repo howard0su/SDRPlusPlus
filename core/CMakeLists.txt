@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.13)
 project(sdrpp_core)
 
+set(CMAKE_CXX_STANDARD 17)
+
 if (USE_INTERNAL_LIBCORRECT)
     add_subdirectory("libcorrect/")
 endif (USE_INTERNAL_LIBCORRECT)
@@ -103,7 +105,11 @@ if (MSVC)
     find_package(zstd CONFIG REQUIRED)
     target_link_libraries(sdrpp_core PUBLIC zstd::libzstd_shared)
 
-    target_compile_definitions(sdrpp_core PUBLIC _CRT_SECURE_NO_WARNINGS)
+    # CURL
+    find_package(CURL REQUIRED)
+    target_link_libraries(sdrpp_core PRIVATE CURL::libcurl)
+
+    target_compile_definitions(sdrpp_core PUBLIC _CRT_SECURE_NO_WARNINGS _USE_MATH_DEFINES NOMINMAX)
 elseif (ANDROID)
     target_include_directories(sdrpp_core PUBLIC
         /sdr-kit/${ANDROID_ABI}/include

@@ -1,10 +1,15 @@
 #pragma once
 #include <future>
 #include <memory>
+#include <chrono>
 
 namespace ImOsm {
 class ITile;
+#ifdef _MSC_VER
+using namespace std::literals::chrono_literals;
+#else
 using namespace std::chrono_literals;
+#endif
 
 struct TileAsync {
   struct FutureData {

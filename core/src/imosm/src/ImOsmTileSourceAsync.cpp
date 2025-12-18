@@ -5,7 +5,11 @@
 #include <algorithm>
 
 namespace ImOsm {
+#ifdef _MSC_VER
+using namespace std::literals::chrono_literals;
+#else
 using namespace std::chrono_literals;
+#endif
 
 TileSourceAsync::TileSourceAsync(int requestLimit, bool preload)
     : _requestLimit{requestLimit}, _preload{preload} {}

@@ -2,6 +2,7 @@
 #include "ImOsmCoords.h"
 #include <memory>
 #include <vector>
+#include <string>
 
 namespace ImOsm {
 namespace Rich {
