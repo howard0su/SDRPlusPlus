@@ -589,14 +589,18 @@ namespace ImGui {
         double vfoMinFreq = _vfo->centerOffset - (_vfo->bandwidth / 2.0);
         double vfoMaxFreq = _vfo->centerOffset + (_vfo->bandwidth / 2.0);
         double vfoMaxSizeFreq = _vfo->centerOffset + _vfo->bandwidth;
-        int vfoMinSideOffset = std::clamp<int>(((vfoMinSizeFreq / (wholeBandwidth / 2.0)) * (double)(rawFFTSize / 2)) + (rawFFTSize / 2), 0, rawFFTSize);
-        int vfoMinOffset = std::clamp<int>(((vfoMinFreq / (wholeBandwidth / 2.0)) * (double)(rawFFTSize / 2)) + (rawFFTSize / 2), 0, rawFFTSize);
-        int vfoMaxOffset = std::clamp<int>(((vfoMaxFreq / (wholeBandwidth / 2.0)) * (double)(rawFFTSize / 2)) + (rawFFTSize / 2), 0, rawFFTSize);
-        int vfoMaxSideOffset = std::clamp<int>(((vfoMaxSizeFreq / (wholeBandwidth / 2.0)) * (double)(rawFFTSize / 2)) + (rawFFTSize / 2), 0, rawFFTSize);
+        int maxIndex = std::max<int>(0, rawFFTSize - 1);
+        int vfoMinSideOffset = std::clamp<int>(((vfoMinSizeFreq / (wholeBandwidth / 2.0)) * (double)(rawFFTSize / 2)) + (rawFFTSize / 2), 0, maxIndex);
+        int vfoMinOffset = std::clamp<int>(((vfoMinFreq / (wholeBandwidth / 2.0)) * (double)(rawFFTSize / 2)) + (rawFFTSize / 2), 0, maxIndex);
+        int vfoMaxOffset = std::clamp<int>(((vfoMaxFreq / (wholeBandwidth / 2.0)) * (double)(rawFFTSize / 2)) + (rawFFTSize / 2), 0, maxIndex);
+        int vfoMaxSideOffset = std::clamp<int>(((vfoMaxSizeFreq / (wholeBandwidth / 2.0)) * (double)(rawFFTSize / 2)) + (rawFFTSize / 2), 0, maxIndex);
 
         double avg = 0;
         float max = -INFINITY;
         int avgCount = 0;
+
+        // Sanity checks: ensure ranges are valid
+        if (vfoMinOffset > vfoMaxOffset) { return false; }
 
         // Calculate Left average
         for (int i = vfoMinSideOffset; i < vfoMinOffset; i++) {
@@ -609,6 +613,8 @@ namespace ImGui {
             avg += fftLine[i];
             avgCount++;
         }
+
+        if (avgCount == 0) { return false; }
 
         avg /= (double)(avgCount);
 
@@ -625,6 +631,9 @@ namespace ImGui {
 
     void WaterFall::updateWaterfallFb() {
         if (!waterfallVisible || rawFFTs == NULL) {
+            return;
+        }
+        if (waterfallHeight <= 0 || dataWidth <= 0 || rawFFTSize <= 0) {
             return;
         }
         double offsetRatio = viewOffset / (wholeBandwidth / 2.0);
@@ -984,7 +993,9 @@ namespace ImGui {
 
         if (waterfallVisible) {
             doZoom(drawDataStart, drawDataSize, rawFFTSize, dataWidth, &rawFFTs[currentFFTLine * rawFFTSize], latestFFT);
-            memmove(&waterfallFb[dataWidth], waterfallFb, dataWidth * (waterfallHeight - 1) * sizeof(uint32_t));
+            if (waterfallHeight > 1) {
+                memmove(&waterfallFb[dataWidth], waterfallFb, dataWidth * (waterfallHeight - 1) * sizeof(uint32_t));
+            }
             float pixel;
             float dataRange = waterfallMax - waterfallMin;
             for (int j = 0; j < dataWidth; j++) {
