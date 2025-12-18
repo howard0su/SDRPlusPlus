@@ -3,6 +3,7 @@
 #pragma once
 #include "../demod.h"
 #include "../drm/DRMReceiver.h"
+#include "implot.h"
 
 namespace demod {
     class DRM : public Demodulator {
@@ -45,7 +46,12 @@ namespace demod {
         void showMenu() {
             // Display DRM Receiver Parameters
             auto Parameters = drmReceiver->GetParameters();
+            auto plotManager = drmReceiver->GetPlotManager();
             auto ReceiveStatus = Parameters->ReceiveStatus;
+
+            // Display signal quality metrics
+            float snr = Parameters->GetSNR();
+            ImGui::Text("SNR: %.1f dB", snr);
 
             // use a leds to display each status
             DrawIndicator("FS", ReceiveStatus.FSync.GetStatus());
@@ -60,15 +66,44 @@ namespace demod {
             ImGui::SameLine();
             DrawIndicator("LL", ReceiveStatus.LLAudio.GetStatus());
             ImGui::NewLine();
-            
-            // Display signal quality metrics
-            float snr = Parameters->GetSNR();
-            ImGui::Text("SNR: %.1f dB", snr);
-            
-            // Display MER (Modulation Error Ratio)
-            ImGui::Text("MER: %.1f dB  WMER-MSC: %.1f dB  WMER-FAC: %.1f dB", 
-                        Parameters->rMER, Parameters->rWMERMSC, Parameters->rWMERFAC);
-            
+                                    
+            if (ImPlot::BeginPlot("Constellation", ImVec2(-1, 300), ImPlotFlags_NoMouseText | ImPlotFlags_NoInputs)) {
+                ImPlot::SetupAxes("", "", ImPlotAxisFlags_NoTickLabels, ImPlotAxisFlags_NoTickLabels);
+                ImPlot::SetupAxisLimits(ImAxis_X1, -1.5, 1.5, ImPlotCond_Always);
+                ImPlot::SetupAxisLimits(ImAxis_Y1, -1.5, 1.5, ImPlotCond_Always);
+                
+                std::vector<ImPlotPoint> points;
+                CVector<_COMPLEX> vecConstellation;
+                drmReceiver->GetMSCMLC()->GetVectorSpace(vecConstellation);
+                // convert complex to ImPlot points
+                for (const auto& c : vecConstellation) {
+                    points.emplace_back(c.real(), c.imag());
+                }
+                ImPlot::PlotScatter("MSC", &points[0].x, &points[0].y, (int)points.size());
+
+                vecConstellation.clear();
+                drmReceiver->GetFACMLC()->GetVectorSpace(vecConstellation);
+                // convert complex to ImPlot points
+                points.clear();
+                for (const auto& c : vecConstellation) {
+                    points.emplace_back(c.real(), c.imag());
+                }
+
+                ImPlot::PlotScatter("FAC", &points[0].x, &points[0].y, (int)points.size());
+
+                vecConstellation.clear();
+                drmReceiver->GetSDCMLC()->GetVectorSpace(vecConstellation);
+                // convert complex to ImPlot points
+                points.clear();
+                for (const auto& c : vecConstellation) {
+                    points.emplace_back(c.real(), c.imag());
+                }
+
+                ImPlot::PlotScatter("SDC", &points[0].x, &points[0].y, (int)points.size());
+
+                ImPlot::EndPlot();
+            }
+
             // Display all service info
             for (int curService = 0; curService < (int)Parameters->Service.size(); curService++) {
                 auto& service = Parameters->Service[curService];
@@ -149,10 +184,10 @@ namespace demod {
     private:
         static ImVec4 GetIndicatorColor(ETypeRxStatus state) {
             switch (state) {
-                case ETypeRxStatus::NOT_PRESENT:        return ImVec4(0.5f, 0.5f, 0.5f, 1.0f); // gray
-                case ETypeRxStatus::CRC_ERROR:  return ImVec4(1.0f, 0.0f, 0.0f, 1.0f); // red
-                case ETypeRxStatus::DATA_ERROR: return ImVec4(1.0f, 0.5f, 0.0f, 1.0f); // orange
-                case ETypeRxStatus::RX_OK:        return ImVec4(0.0f, 1.0f, 0.0f, 1.0f); // green
+                case ETypeRxStatus::NOT_PRESENT:        return ImVec4(0.25f, 0.25f, 0.25f, 1.0f); // gray
+                case ETypeRxStatus::CRC_ERROR:  return ImVec4(0.5f, 0.0f, 0.0f, 1.0f); // red
+                case ETypeRxStatus::DATA_ERROR: return ImVec4(0.5f, 0.25f, 0.0f, 1.0f); // orange
+                case ETypeRxStatus::RX_OK:        return ImVec4(0.0f, 0.5f, 0.0f, 1.0f); // green
                 default:
                     return ImVec4(0.0f, 0.0f, 0.0f, 1.0f); // black
             }
@@ -167,11 +202,13 @@ namespace demod {
             ImVec4 col = GetIndicatorColor(state);
             draw_list->AddCircleFilled(center, radius, ImColor(col));
 
-            // Reserve space for the circle + spacing + text
-            ImGui::Dummy(ImVec2(radius * 2 + 6, radius * 2));
-            ImGui::SameLine();
+            // Draw text centered in the circle
+            ImVec2 text_size = ImGui::CalcTextSize(id);
+            ImVec2 text_pos = ImVec2(center.x - text_size.x * 0.5f, center.y - text_size.y * 0.5f);
+            draw_list->AddText(text_pos, IM_COL32(255, 255, 255, 255), id);
 
-            ImGui::TextUnformatted(id);
+            // Reserve space for the circle
+            ImGui::Dummy(ImVec2(radius * 2, radius * 2));
         }
     private:
         double audioSampleRate;
