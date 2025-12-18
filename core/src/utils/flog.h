@@ -26,6 +26,7 @@ namespace flog {
     std::string __toString__(uint16_t value);
     std::string __toString__(uint32_t value);
     std::string __toString__(uint64_t value);
+    std::string __toString__(size_t value);
     std::string __toString__(float value);
     std::string __toString__(double value);
     std::string __toString__(const char* value);

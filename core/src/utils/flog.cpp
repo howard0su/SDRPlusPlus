@@ -235,6 +235,16 @@ namespace flog {
         return buf;
     }
 
+std::string __toString__(size_t value) {
+    char buf[64];
+    if constexpr (sizeof(size_t) == 4) {
+        sprintf(buf, "%" PRIu32, static_cast<uint32_t>(value));
+    } else {
+        sprintf(buf, "%" PRIu64, static_cast<uint64_t>(value));
+    }
+    return buf;
+}
+
     std::string __toString__(float value) {
         char buf[256];
         sprintf(buf, "%f", value);
