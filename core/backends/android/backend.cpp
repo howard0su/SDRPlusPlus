@@ -1,8 +1,9 @@
-#include <backend.h>log
+#include <backend.h>
 #include "android_backend.h"
 #include <core.h>
 #include <gui/gui.h>
 #include "imgui.h"
+#include "implot.h"
 #include "imgui_impl_android.h"
 #include "imgui_impl_opengl3.h"
 #include <android/log.h>
@@ -138,6 +139,7 @@ namespace backend {
         // Setup Dear ImGui context
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
+        ImPlot::CreateContext();
         ImGuiIO& io = ImGui::GetIO();
         (void)io;
 
@@ -233,6 +235,7 @@ namespace backend {
         // Cleanup
         ImGui_ImplOpenGL3_Shutdown();
         ImGui_ImplAndroid_Shutdown();
+        ImPlot::DestroyContext();
         ImGui::DestroyContext();
 
         // Destroy all

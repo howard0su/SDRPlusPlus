@@ -39,6 +39,7 @@ target_compile_definitions(sdrpp_core PUBLIC INSTALL_PREFIX="${CMAKE_INSTALL_PRE
 # Include core headers
 target_include_directories(sdrpp_core PUBLIC "src/")
 target_include_directories(sdrpp_core PUBLIC "src/imgui")
+target_include_directories(sdrpp_core PUBLIC "src/imosm/include")
 
 # Configure backend includes and libraries
 if (OPT_BACKEND_GLFW)
@@ -126,6 +127,7 @@ else()
     pkg_check_modules(VOLK REQUIRED volk)
     pkg_check_modules(GLFW3 REQUIRED glfw3)
     pkg_check_modules(LIBZSTD REQUIRED libzstd)
+    pkg_check_modules(CURL REQUIRED libcurl)
 
     target_include_directories(sdrpp_core PUBLIC
         ${OPENGL_INCLUDE_DIRS}
@@ -133,6 +135,7 @@ else()
         ${GLFW3_INCLUDE_DIRS}
         ${VOLK_INCLUDE_DIRS}
         ${LIBZSTD_INCLUDE_DIRS}
+        ${CURL_INCLUDE_DIRS}
     )
     
     target_link_directories(sdrpp_core PUBLIC
@@ -141,6 +144,7 @@ else()
         ${GLFW3_LIBRARY_DIRS}
         ${VOLK_LIBRARY_DIRS}
         ${LIBZSTD_LIBRARY_DIRS}
+        ${CURL_LIBRARY_DIRS}
     )
 
     target_link_libraries(sdrpp_core PUBLIC
@@ -149,6 +153,7 @@ else()
         ${GLFW3_LIBRARIES}
         ${VOLK_LIBRARIES}
         ${LIBZSTD_LIBRARIES}
+        ${CURL_LIBRARIES}
     )
 
     if (NOT USE_INTERNAL_LIBCORRECT)
