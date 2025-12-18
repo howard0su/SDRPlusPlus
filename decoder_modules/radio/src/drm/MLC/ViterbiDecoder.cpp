@@ -34,7 +34,6 @@ _REAL CViterbiDecoder::Decode(CVector<CDistance>& vecNewDistance,
 {
     int				i;
     int				iDistCnt;
-    int				iCurDecState;
     _VITMETRTYPE*	pCurTrelMetric;
     _VITMETRTYPE*	pOldTrelMetric;
 
@@ -324,9 +323,9 @@ _REAL CViterbiDecoder::Decode(CVector<CDistance>& vecNewDistance,
     
     
             /* Update trellis --------------------------------------------------- */
-            #define BUTTERFLY(cur, prev0, prev1, met0, met1) { \
-                /* Calculate metrics from the two previous states, use the old
+            /* Calculate metrics from the two previous states, use the old
                 metric from the previous states plus the "transition-metric" */
+            #define BUTTERFLY(cur, prev0, prev1, met0, met1) { \
                 \
                 const _VITMETRTYPE rFiStAccMetricPrev0 = pOldTrelMetric[prev0] + METRICSET(i)[met0]; \
                 const _VITMETRTYPE rFiStAccMetricPrev1 = pOldTrelMetric[prev1] + METRICSET(i)[met1]; \
@@ -438,7 +437,7 @@ _REAL CViterbiDecoder::Decode(CVector<CDistance>& vecNewDistance,
         /* Chainback the decoded bits from trellis (only for MLSE) -------------- */
         /* The end-state is defined by the DRM standard as all-zeros (shift register
            in the encoder is padded with zeros at the end */
-        iCurDecState = 0;
+        int				iCurDecState = 0;
         
         for (i = 0; i < iNumOutBits; i++)
         {

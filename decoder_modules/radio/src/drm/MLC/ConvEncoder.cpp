@@ -170,6 +170,7 @@ int CConvEncoder::Encode(CVector<_DECISION>& vecInputData,
 }
 
 #ifdef USE_MAX_LOG_MAP
+#define Min(a, b)		((a) < (b) ? (a) : (b))
 _DECISION CConvEncoder::SoftConvolution(const _BYTE byNewStateShiftReg,
                                         CShiftRegister<_DECISION>& vecStateMem,
                                         const int iGenPolyn)
