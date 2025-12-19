@@ -225,6 +225,17 @@ private:
 
         // Update the samplerate
         core::setInputSampleRate(sampleRate);
+
+        // Update freq select limits
+        if (port == PORT_HF) {
+            gui::freqSelect.minFreq = 0;
+            gui::freqSelect.maxFreq = sampleRate <= 32e6 ? 32e6 : 64e6;
+        }
+        else {
+            gui::freqSelect.minFreq = 30e6;
+            gui::freqSelect.maxFreq = 2e9;
+        }
+        gui::freqSelect.limitFreq = true;
     }
 
     static void menuSelected(void* ctx) {
