@@ -1,4 +1,3 @@
-#define NOMINMAX
 #include <imgui.h>
 #include <utils/flog.h>
 #include <module.h>
