@@ -1,4 +1,4 @@
-# SDR++ Copilot Instructions
+# SDR-888 Copilot Instructions
 
 Purpose: Enable AI coding agents to be immediately productive in this C++/CMake, cross‑platform SDR application by capturing the project's architecture, workflows, and conventions.
 

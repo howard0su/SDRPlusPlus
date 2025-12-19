@@ -93,7 +93,7 @@ make -j2
 make install
 cd ../../
 
-# Build SDR++ Itself
+# Build SDR-888 Itself
 cd SDRPlusPlus
 mkdir build
 cd build

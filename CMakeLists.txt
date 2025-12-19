@@ -31,7 +31,7 @@ option(OPT_OVERRIDE_STD_FILESYSTEM "Use a local version of std::filesystem on sy
 # option(OPT_BUILD_RFSPACE_SOURCE "Build RFspace Source Module (no dependencies required)" ON)
 # option(OPT_BUILD_RTL_SDR_SOURCE "Build RTL-SDR Source Module (Dependencies: librtlsdr)" ON)
 # option(OPT_BUILD_RTL_TCP_SOURCE "Build RTL-TCP Source Module (no dependencies required)" ON)
-# option(OPT_BUILD_SDRPP_SERVER_SOURCE "Build SDR++ Server Source Module (no dependencies required)" ON)
+# option(OPT_BUILD_SDRPP_SERVER_SOURCE "Build SDR-888 Server Source Module (no dependencies required)" ON)
 # option(OPT_BUILD_SDRPLAY_SOURCE "Build SDRplay Source Module (Dependencies: libsdrplay)" OFF)
 # option(OPT_BUILD_SOAPY_SOURCE "Build SoapySDR Source Module (Dependencies: soapysdr)" OFF)
 # option(OPT_BUILD_SPECTRAN_SOURCE "Build Spectran Source Module (Dependencies: Aaronia RTSA Suite)" OFF)
@@ -64,8 +64,8 @@ option(OPT_OVERRIDE_STD_FILESYSTEM "Use a local version of std::filesystem on sy
 # option(OPT_BUILD_FREQUENCY_MANAGER "Build the Frequency Manager module" ON)
 # option(OPT_BUILD_IQ_EXPORTER "Build the IQ Exporter module" ON)
 # option(OPT_BUILD_RECORDER "Audio and baseband recorder" ON)
-# option(OPT_BUILD_RIGCTL_CLIENT "Rigctl client to make SDR++ act as a panadapter" ON)
-# option(OPT_BUILD_RIGCTL_SERVER "Rigctl backend for controlling SDR++ with software like gpredict" ON)
+# option(OPT_BUILD_RIGCTL_CLIENT "Rigctl client to make SDR-888 act as a panadapter" ON)
+# option(OPT_BUILD_RIGCTL_SERVER "Rigctl backend for controlling SDR-888 with software like gpredict" ON)
 # option(OPT_BUILD_SCANNER "Frequency scanner" ON)
 # option(OPT_BUILD_SCHEDULER "Build the scheduler" OFF)
 
@@ -123,10 +123,10 @@ if (ANDROID)
     set(CMAKE_CXX14_EXTENSION_COMPILE_OPTION "-std=c++17")
 endif (ANDROID)
 
-# Core of SDR++
+# Core of SDR-888
 add_subdirectory("core")
 
-# Unittests of SDR++
+# Unittests of SDR-888
 add_subdirectory("tests")
 
 # Source modules

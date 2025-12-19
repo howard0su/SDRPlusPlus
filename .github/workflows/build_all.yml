@@ -149,7 +149,7 @@ jobs:
 
         - name: Create Archive
           working-directory: ${{runner.workspace}}
-          run: cd $GITHUB_WORKSPACE && sh make_macos_bundle.sh ${{runner.workspace}}/build ./SDR++.app && zip -r ${{runner.workspace}}/sdrpp_macos_intel.zip SDR++.app
+          run: cd $GITHUB_WORKSPACE && sh make_macos_bundle.sh ${{runner.workspace}}/build ./SDR-888.app && zip -r ${{runner.workspace}}/sdrpp_macos_intel.zip SDR-888.app
 
         - name: Save Archive
           uses: actions/upload-artifact@v4
@@ -209,7 +209,7 @@ jobs:
 
         - name: Create Archive
           working-directory: ${{runner.workspace}}
-          run: cd $GITHUB_WORKSPACE && sh make_macos_bundle.sh ${{runner.workspace}}/build ./SDR++.app && zip -r ${{runner.workspace}}/sdrpp_macos_arm.zip SDR++.app
+          run: cd $GITHUB_WORKSPACE && sh make_macos_bundle.sh ${{runner.workspace}}/build ./SDR-888.app && zip -r ${{runner.workspace}}/sdrpp_macos_arm.zip SDR-888.app
 
         - name: Save Archive
           uses: actions/upload-artifact@v4

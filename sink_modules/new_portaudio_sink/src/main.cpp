@@ -18,7 +18,7 @@
 
 SDRPP_MOD_INFO{
     /* Name:            */ "new_portaudio_sink",
-    /* Description:     */ "Audio sink module for SDR++",
+    /* Description:     */ "Audio sink module for SDR-888",
     /* Author:          */ "Ryzerth;Maxime Biette",
     /* Version:         */ 0, 1, 0,
     /* Max instances    */ 1
@@ -78,7 +78,7 @@ public:
         double sampleRate = dev.sampleRates[srId];
         int blockSize = sampleRate / BLOCK_SIZE_DIVIDER;
 
-        // Set the SDR++ stream sample rate
+        // Set the SDR-888 stream sample rate
         _stream->setSampleRate(sampleRate);
 
         // Update the block size on the packer

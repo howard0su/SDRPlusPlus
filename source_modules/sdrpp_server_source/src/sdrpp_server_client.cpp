@@ -227,7 +227,7 @@ namespace server {
                 };
             }
             else if (r_pkt_hdr->type == PACKET_TYPE_ERROR) {
-                flog::error("SDR++ Server Error: {0}", rbuffer[sizeof(PacketHeader)]);
+                flog::error("SDR-888 Server Error: {0}", rbuffer[sizeof(PacketHeader)]);
             }
             else {
                 flog::error("Invalid packet type: {0}", r_pkt_hdr->type);

@@ -1,7 +1,7 @@
-# SDR++, The bloat-free SDR software<br>
+# SDR-888, The bloat-free SDR software<br>
 
 ![Screenshot](https://i.imgur.com/Ter2MQJ.png)
-SDR++ is a cross-platform and open source SDR software with the aim of being bloat free and simple to use.
+SDR-888 is a cross-platform and open source SDR software with the aim of being bloat free and simple to use.
 
 ![Build](https://github.com/AlexandreRouma/SDRPlusPlus/workflows/Build%20Binaries/badge.svg)
 
@@ -109,7 +109,7 @@ This will create the `root_dev` directory that will be used to save the configs 
 
 You will next need to edit the `root_dev/config.json` file to point to the modules that were built. If the file is missing in your folder run the application once and it will create one with default value -- see later on how to run the application.
 
-### Run SDR++ from the command line
+### Run SDR-888 from the command line
 
 From the top directory, you can simply run:
 
@@ -151,9 +151,9 @@ You also need to change the location of the resource and module directories, for
 
 Remember that these paths will be relative to the run directory.
 
-## Installing SDR++
+## Installing SDR-888
 
-If you choose to run SDR++ for development, you do not need this step.
+If you choose to run SDR-888 for development, you do not need this step.
 First, copy over the exe and DLLs from `build/Release/` to `root_dev`.
 
 Next you need to copy over all the modules that were compiled. To do so, copy the DLL file of the module (located in its build folder given below) to the `root_dev/modules` directory and other DLLs (that do not have the exact name of the module) to the `root_dev` directory.
@@ -208,9 +208,9 @@ sh ./create_root.sh
 
 ## Running for development
 
-If you wish to install SDR++, skip to the next step
+If you wish to install SDR-888, skip to the next step
 
-First run SDR++ from the build directory to generate a default config file
+First run SDR-888 from the build directory to generate a default config file
 
 ```
 ./sdrpp -r ../root_dev/
@@ -257,9 +257,9 @@ Or, if you wish to run from the build directory, you will need to correct the di
 ./sdrpp -r ../root_dev
 ```
 
-## Installing SDR++
+## Installing SDR-888
 
-To install SDR++, run the following command in your ``build`` folder:
+To install SDR-888, run the following command in your ``build`` folder:
 
 ```sh
 sudo make install
@@ -289,7 +289,7 @@ You will need to install volk from source. Follow the instructions on their repo
 
 ## Build
 
-You will need a few special cmake argument on top of the linux ones. You will need to enable the portaudio sink modules `-DOPT_BUILD_PORTAUDIO_SINK=ON -DOPT_BUILD_NEW_PORTAUDIO_SINK=ON` and disable the usual rtaudio sink `-DOPT_BUILD_AUDIO_SINK=OFF` as well as the option to tell SDR++ that it will run as a MacOS bundle `-DUSE_BUNDLE_DEFAULTS=ON`. On MacOS versions older than Catalina (10.15), you will also need to use the internal std::filesystem as the OS can't provide it `-DOPT_OVERRIDE_STD_FILESYSTEM=ON`.
+You will need a few special cmake argument on top of the linux ones. You will need to enable the portaudio sink modules `-DOPT_BUILD_PORTAUDIO_SINK=ON -DOPT_BUILD_NEW_PORTAUDIO_SINK=ON` and disable the usual rtaudio sink `-DOPT_BUILD_AUDIO_SINK=OFF` as well as the option to tell SDR-888 that it will run as a MacOS bundle `-DUSE_BUNDLE_DEFAULTS=ON`. On MacOS versions older than Catalina (10.15), you will also need to use the internal std::filesystem as the OS can't provide it `-DOPT_OVERRIDE_STD_FILESYSTEM=ON`.
 
 Here is an example of build commands that will build almost all modules at the time of writing. You can always check the CI scripts for the latest arguments just in case but this should work. From the top of the SDRPlusPlus directory:
 
@@ -305,19 +305,19 @@ make -j<N>
 From the top of the SDRPlusPlus directory:
 
 ```sh
-sh make_macos_bundle.sh ./build ./SDR++.app
+sh make_macos_bundle.sh ./build ./SDR-888.app
 ```
 
-This will create a `SDR++.app` bundle that you can instal like any other MacOS app by dragging it into Applications.
+This will create a `SDR-888.app` bundle that you can instal like any other MacOS app by dragging it into Applications.
 
 # Module List
 
 Not all modules are built by default. I decided to disable the build of those with large libraries, libraries that can't be installed through the package manager (or pothos) and those that are still in beta.
-Modules in beta are still included in releases for the most part but not enabled in SDR++ (need to be instantiated).
+Modules in beta are still included in releases for the most part but not enabled in SDR-888 (need to be instantiated).
 
 ## Sources
 
-| Name                 | Stage      | Dependencies      | Option                         | Built by default| Built in Release        | Enabled in SDR++ by default |
+| Name                 | Stage      | Dependencies      | Option                         | Built by default| Built in Release        | Enabled in SDR-888 by default |
 |----------------------|------------|-------------------|--------------------------------|:---------------:|:-----------------------:|:---------------------------:|
 | airspy_source        | Working    | libairspy         | OPT_BUILD_AIRSPY_SOURCE        | ✅              | ✅                     | ✅                         |
 | airspyhf_source      | Working    | libairspyhf       | OPT_BUILD_AIRSPYHF_SOURCE      | ✅              | ✅                     | ✅                         |
@@ -347,7 +347,7 @@ Modules in beta are still included in releases for the most part but not enabled
 
 ## Sinks
 
-| Name               | Stage      | Dependencies | Option                       | Built by default| Built in Release | Enabled in SDR++ by default |
+| Name               | Stage      | Dependencies | Option                       | Built by default| Built in Release | Enabled in SDR-888 by default |
 |--------------------|------------|--------------|------------------------------|:---------------:|:----------------:|:---------------------------:|
 | android_audio_sink | Working    | -            | OPT_BUILD_ANDROID_AUDIO_SINK | ⛔              | ✅              | ✅ (Android only)          |
 | audio_sink         | Working    | rtaudio      | OPT_BUILD_AUDIO_SINK         | ✅              | ✅              | ✅                         |
@@ -357,7 +357,7 @@ Modules in beta are still included in releases for the most part but not enabled
 
 ## Decoders
 
-| Name                | Stage      | Dependencies | Option                        | Built by default| Built in Release | Enabled in SDR++ by default |
+| Name                | Stage      | Dependencies | Option                        | Built by default| Built in Release | Enabled in SDR-888 by default |
 |---------------------|------------|--------------|-------------------------------|:---------------:|:----------------:|:---------------------------:|
 | atv_decoder         | Unfinished | -            | OPT_BUILD_ATV_DECODER         | ⛔              | ⛔              | ⛔                         |
 | dab_decoder         | Unfinished | -            | OPT_BUILD_DAB_DECODER         | ⛔              | ⛔              | ⛔                         |
@@ -372,7 +372,7 @@ Modules in beta are still included in releases for the most part but not enabled
 
 ## Misc
 
-| Name                | Stage      | Dependencies | Option                      | Built by default | Built in Release | Enabled in SDR++ by default |
+| Name                | Stage      | Dependencies | Option                      | Built by default | Built in Release | Enabled in SDR-888 by default |
 |---------------------|------------|--------------|-----------------------------|:----------------:|:----------------:|:---------------------------:|
 | discord_integration | Working    | -            | OPT_BUILD_DISCORD_PRESENCE  | ✅              | ✅               | ⛔                         |
 | frequency_manager   | Working    | -            | OPT_BUILD_FREQUENCY_MANAGER | ✅              | ✅               | ✅                         |
@@ -387,11 +387,11 @@ Modules in beta are still included in releases for the most part but not enabled
 
 First, please make sure you're running the latest automated build. If your issue is linked to a bug it is likely that is has already been fixed in later releases
 
-## SDR++ crashes then it won't start again no matter what
+## SDR-888 crashes then it won't start again no matter what
 
 This is a bug in 1.0.0 that was fixed in 1.0.1
 
-In some cases, if a crash happened while the config was being saved, the config file would be corrupted and SDR++ would refuse to start because of it.
+In some cases, if a crash happened while the config was being saved, the config file would be corrupted and SDR-888 would refuse to start because of it.
 
 This has now been fixed. If a config file is corrupted it'll just reset it to its default state.
 
@@ -401,18 +401,18 @@ You likely installed the `soapysdr-module-all` package on Ubuntu/Debian. If not 
 
 ## "I don't see -insert module name here-, what's going on?"
 
-If the module was included in a later update, it's not enabled in the config. The easiest way to fix this is just to delete the `config.json` file and let SDR++ recreate it (you will lose your setting relating to the main UI like VFO colors, zoom level and theme).
+If the module was included in a later update, it's not enabled in the config. The easiest way to fix this is just to delete the `config.json` file and let SDR-888 recreate it (you will lose your setting relating to the main UI like VFO colors, zoom level and theme).
 The best option however is to edit the config file to add an instance of the module you wish to have enabled (see the Module List).
 
-## SDR++ crashes when stopping a RTL-SDR
+## SDR-888 crashes when stopping a RTL-SDR
 
 This is a bug recently introduced by libusb1.4
 To solve, this, simply downgrade to libusb1.3
 
-## SDR++ crashes when starting a HackRF
+## SDR-888 crashes when starting a HackRF
 
 If you also have the SoapySDR module enabled, this is a bug in libhackrf. It's caused by libhackrf not checking if it's already initialized.
-The solution until a fixed libhackrf version is released is to disable the soapy_source module from SDR++. For this, go into the "Module Manager" menu and click the `-` button next to the row with "soapy_source". After that, restart SDR++.
+The solution until a fixed libhackrf version is released is to disable the soapy_source module from SDR-888. For this, go into the "Module Manager" menu and click the `-` button next to the row with "soapy_source". After that, restart SDR-888.
 
 ## Issue not listed here?
 
