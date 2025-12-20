@@ -1,4 +1,3 @@
-#define IMGUI_DEFINE_MATH_OPERATORS
 #ifdef _WIN32
 #include <winsock2.h>
 #include <ws2ipdef.h>

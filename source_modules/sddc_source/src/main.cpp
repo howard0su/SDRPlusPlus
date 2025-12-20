@@ -58,7 +58,7 @@ public:
     }
 
     ~SDDCSourceModule() {
-        // Nothing to do
+        sigpath::sourceManager.unregisterSource("SDDC");
     }
 
     void postInit() {}

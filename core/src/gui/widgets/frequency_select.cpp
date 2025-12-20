@@ -5,9 +5,6 @@
 #include <backend.h>
 #include <utils/hrfreq.h>
 
-#ifndef IMGUI_DEFINE_MATH_OPERATORS
-#define IMGUI_DEFINE_MATH_OPERATORS
-#endif
 #include <imgui/imgui_internal.h>
 
 bool isInArea(ImVec2 val, ImVec2 min, ImVec2 max) {
