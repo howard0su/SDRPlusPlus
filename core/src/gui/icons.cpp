@@ -32,7 +32,7 @@ namespace icons {
             return false;
         }
 
-        LOGO = loadTexture(resDir + "/icons/sdrpp.png");
+        LOGO = loadTexture(resDir + "/icons/sdr888.png");
         PLAY = loadTexture(resDir + "/icons/play.png");
         STOP = loadTexture(resDir + "/icons/stop.png");
         MENU = loadTexture(resDir + "/icons/menu.png");
