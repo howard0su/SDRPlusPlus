@@ -3,7 +3,6 @@
 #include <gui/icons.h>
 #include <gui/style.h>
 #include <config.h>
-#include <credits.h>
 #include <version.h>
 
 namespace credits {
@@ -30,39 +29,9 @@ namespace credits {
         ImGui::Image(icons::LOGO, imageSize);
         ImGui::Spacing();
         ImGui::Spacing();
-        ImGui::Spacing();
 
-        ImGui::TextUnformatted("This software is brought to you by Alexandre Rouma (ON5RYZ) with the help of\n\n");
+        ImGui::TextUnformatted("This software is based on SDR++ from Alexandre Rouma (ON5RYZ) . Modified by SDDC Lab.");
 
-        ImGui::Columns(4, "CreditColumns", true);
-
-        ImGui::TextUnformatted("Contributors");
-        for (int i = 0; i < sdrpp_credits::contributorCount; i++) {
-            ImGui::BulletText("%s", sdrpp_credits::contributors[i]);
-        }
-
-        ImGui::NextColumn();
-        ImGui::TextUnformatted("Libraries");
-        for (int i = 0; i < sdrpp_credits::libraryCount; i++) {
-            ImGui::BulletText("%s", sdrpp_credits::libraries[i]);
-        }
-
-        ImGui::NextColumn();
-        ImGui::TextUnformatted("Hardware Donators");
-        for (int i = 0; i < sdrpp_credits::hardwareDonatorCount; i++) {
-            ImGui::BulletText("%s", sdrpp_credits::hardwareDonators[i]);
-        }
-
-        ImGui::NextColumn();
-        ImGui::TextUnformatted("Patrons");
-        for (int i = 0; i < sdrpp_credits::patronCount; i++) {
-            ImGui::BulletText("%s", sdrpp_credits::patrons[i]);
-        }
-
-        ImGui::Columns(1, "CreditColumnsEnd", true);
-
-        ImGui::Spacing();
-        ImGui::Spacing();
         ImGui::Spacing();
         ImGui::TextUnformatted("SDR-888 v" VERSION_STR " (Built at " __TIME__ ", " __DATE__ ")");
 

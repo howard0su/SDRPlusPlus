@@ -3,7 +3,6 @@
 #include <imgui.h>
 #include <gui/icons.h>
 #include <gui/style.h>
-#include <credits.h>
 #include <gui/gui.h>
 #include <backend.h>
 
