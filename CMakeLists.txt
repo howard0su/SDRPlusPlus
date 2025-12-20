@@ -134,6 +134,7 @@ add_subdirectory("tests")
 add_subdirectory("source_modules/audio_source")
 add_subdirectory("source_modules/sddc_source")
 add_subdirectory("source_modules/file_source")
+add_subdirectory("source_modules/web888_source")
 add_subdirectory("sink_modules/audio_sink")
 
 # Decoders

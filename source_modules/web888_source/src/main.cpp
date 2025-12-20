@@ -12,23 +12,21 @@ inline void usleep(int micros) {
 #include <utils/flog.h>
 #include <module.h>
 #include <gui/gui.h>
-#include <gui/widgets/simple_widgets.h>
 #include <signal_path/signal_path.h>
 #include <core.h>
 #include <config.h>
-#include "utils/proto/kiwisdr.h"
-#include "utils/usleep.h"
+#include "kiwisdr.h"
 #include "gui/smgui.h"
+#include "imgui_stdlib.h"
 #include <filesystem>
 #include <chrono>
 #include <fstream>
-#include <gui/brown/kiwisdr_map.h>
 
 
 SDRPP_MOD_INFO{
-    /* Name:            */ "kiwisdr_source",
-    /* Description:     */ "KiwiSDR WebSDR source module for SDR++",
-    /* Author:          */ "san",
+    /* Name:            */ "web888_source",
+    /* Description:     */ "Web888 source module for SDR-888",
+    /* Author:          */ "SDDC Lab",
     /* Version:         */ 0, 1, 0,
     /* Max instances    */ 1
 };
@@ -36,28 +34,18 @@ SDRPP_MOD_INFO{
 
 ConfigManager config;
 
-struct KiwiSDRSourceModule : public ModuleManager::Instance {
-    std::string kiwisdrSite = "sk6ag1.ddns.net:8071";
-    std::string kiwisdrLoc = "";
-    //    std::string kiwisdrSite = "kiwi-iva.aprs.fi";
+struct Web888SourceModule : public ModuleManager::Instance {
+    std::string web888Site = "servername:8073";
     KiwiSDRClient kiwiSdrClient;
-    std::string root;
-    KiwiSDRMapSelector selector;
 
-    KiwiSDRSourceModule(std::string name, const std::string &root) : kiwiSdrClient(), selector(root, &config, "KiwiSDR Source") {
+    Web888SourceModule(std::string name) {
         this->name = name;
-        this->root = root;
 
         config.acquire();
-        if (config.conf.contains("kiwisdr_site")) {
-            kiwisdrSite = config.conf["kiwisdr_site"];
-        }
-        if (config.conf.contains("kiwisdr_loc")) {
-            kiwisdrLoc = config.conf["kiwisdr_loc"];
+        if (config.conf.contains("web888_site")) {
+            web888Site = config.conf["web888_site"];
         }
         config.release(false);
-
-        kiwiSdrClient.init(kiwisdrSite);
 
         handler.ctx = this;
         handler.selectHandler = menuSelected;
@@ -80,12 +68,12 @@ struct KiwiSDRSourceModule : public ModuleManager::Instance {
         };
 
         // Load config
-        sigpath::sourceManager.registerSource("KiwiSDR", &handler);
+        sigpath::sourceManager.registerSource("Web-888", &handler);
     }
 
-    ~KiwiSDRSourceModule() {
+    ~Web888SourceModule() {
         stop(this);
-        sigpath::sourceManager.unregisterSource("KiwiSDR");
+        sigpath::sourceManager.unregisterSource("Web-888");
     }
 
     void postInit() {
@@ -104,22 +92,24 @@ struct KiwiSDRSourceModule : public ModuleManager::Instance {
     }
 
     static void menuSelected(void* ctx) {
-        KiwiSDRSourceModule* _this = (KiwiSDRSourceModule*)ctx;
-        core::setInputSampleRate(12000); // fixed for kiwisdr
-        flog::info("KiwiSDRSourceModule '{0}': Menu Select!", _this->name);
+        Web888SourceModule* _this = (Web888SourceModule*)ctx;
+        core::setInputSampleRate(12000); // fixed for web888
+        flog::info("Web888SourceModule '{0}': Menu Select!", _this->name);
     }
 
     static void menuDeselected(void* ctx) {
-        KiwiSDRSourceModule* _this = (KiwiSDRSourceModule*)ctx;
-        flog::info("KiwiSDRSourceModule '{0}': Menu Deselect!", _this->name);
+        Web888SourceModule* _this = (Web888SourceModule*)ctx;
+        flog::info("Web888SourceModule '{0}': Menu Deselect!", _this->name);
     }
 
     static void start(void* ctx) {
-        KiwiSDRSourceModule* _this = (KiwiSDRSourceModule*)ctx;
+        Web888SourceModule* _this = (Web888SourceModule*)ctx;
         if (_this->running) { return; }
+
+        
+        _this->kiwiSdrClient.init(_this->web888Site);
         _this->running = true;
         _this->kiwiSdrClient.start();
-        sigpath::iqFrontEnd.setCurrentStreamTime(0); // not started
         _this->nextSend = 0;
         _this->timeSet = false;
         std::thread feeder([=]() {
@@ -128,7 +118,7 @@ struct KiwiSDRSourceModule : public ModuleManager::Instance {
                 _this->kiwiSdrClient.iqDataLock.lock();
                 auto bufsize = _this->kiwiSdrClient.iqData.size();
                 _this->kiwiSdrClient.iqDataLock.unlock();
-                double now = (double)currentTimeMillis();
+                double now = (double)KiwiSDRClient::currentTimeMillis();
                 if (nextSend == 0) {
                     if (bufsize < 200) {
                         usleep(16000); // some sleep
@@ -144,7 +134,7 @@ struct KiwiSDRSourceModule : public ModuleManager::Instance {
                     }
                 }
                 std::vector<std::complex<float>> toSend;
-                int bufferSize = 0;
+                size_t bufferSize = 0;
                 _this->kiwiSdrClient.iqDataLock.lock();
                 if (_this->kiwiSdrClient.iqData.size() >= 200) {
                     for (int i = 0; i < 200; i++) {
@@ -160,41 +150,29 @@ struct KiwiSDRSourceModule : public ModuleManager::Instance {
                 else {
                     nextSend += 1000.0 / 60.0;
                 }
-                int64_t ctm = currentTimeMillis();
+                int64_t ctm = KiwiSDRClient::currentTimeMillis();
                 if (!toSend.empty()) {
-                    //                    flog::info("{} Sending samples! buf remain = {}", ctm, bufferSize);
                     memcpy(_this->stream.writeBuf, toSend.data(), toSend.size() * sizeof(dsp::complex_t));
                     _this->stream.swap((int)toSend.size());
                 }
                 else {
                     nextSend = 0;
-                    //                    flog::info("{} Underflow of KiwiSDR iq data!", ctm);
-                }
-                long long int newStreamTime = currentTimeMillis() - (bufferSize / _this->kiwiSdrClient.IQDATA_FREQUENCY) - 500; // just 500.
-                if (!_this->timeSet) {
-                    sigpath::iqFrontEnd.setCurrentStreamTime(newStreamTime);
-                    _this->timeSet = true;
-                }
-                else {
-                    if (sigpath::iqFrontEnd.getCurrentStreamTime() < newStreamTime) {
-                        sigpath::iqFrontEnd.setCurrentStreamTime(newStreamTime);
-                    }
                 }
             }
         });
         feeder.detach();
 
         _this->running = true;
-        flog::info("KiwiSDRSourceModule '{0}': Start!", _this->name);
+        flog::info("Web888SourceModule '{0}': Start!", _this->name);
     }
 
     static void stop(void* ctx) {
-        KiwiSDRSourceModule* _this = (KiwiSDRSourceModule*)ctx;
+        Web888SourceModule* _this = (Web888SourceModule*)ctx;
         if (!_this->running) { return; }
         _this->kiwiSdrClient.stop();
 
         _this->running = false;
-        flog::info("KiwiSDRSourceModule '{0}': Stop!", _this->name);
+        flog::info("Web888SourceModule '{0}': Stop!", _this->name);
     }
 
     std::vector<dsp::complex_t> incomingBuffer;
@@ -204,7 +182,7 @@ struct KiwiSDRSourceModule : public ModuleManager::Instance {
     void incomingSample(double i, double q) {
         incomingBuffer.emplace_back(dsp::complex_t{ (float)q, (float)i });
         if (incomingBuffer.size() >= 200) { // 60 times per second
-            double now = (double)currentTimeMillis();
+            double now = (double)KiwiSDRClient::currentTimeMillis();
             if (nextSend == 0) {
                 nextSend = now;
             }
@@ -225,53 +203,23 @@ struct KiwiSDRSourceModule : public ModuleManager::Instance {
     double lastTuneFrequency = 14.100;
 
     static void tune(double freq, void* ctx) {
-        KiwiSDRSourceModule* _this = (KiwiSDRSourceModule*)ctx;
+        Web888SourceModule* _this = (Web888SourceModule*)ctx;
         _this->lastTuneFrequency = freq;
         if (_this->running && _this->connected) {
             _this->kiwiSdrClient.tune(freq, KiwiSDRClient::TUNE_IQ);
         }
-        flog::info("KiwiSDRSourceModule '{0}': Tune: {1}!", _this->name, freq);
+        flog::info("Web888SourceModule '{0}': Tune: {1}!", _this->name, freq);
     }
 
 
     static void menuHandler(void* ctx) {
+        Web888SourceModule* _this = (Web888SourceModule*)ctx;
 
-        KiwiSDRSourceModule* _this = (KiwiSDRSourceModule*)ctx;
-
-        if (core::args["server"].b()) {
-
-        } else {
-            // local ui
-            ImGui::BeginDisabled(gui::mainWindow.isPlaying());
-            if (doFingerButton("Choose on map...")) {
-                _this->selector.openPopup();
-            }
-            ImGui::EndDisabled();
-
-            _this->selector.drawPopup([=](const std::string &hostPort, const std::string &loc) {
-                _this->kiwisdrSite = hostPort;
-                _this->kiwisdrLoc = loc;
-                config.acquire();
-                config.conf["kiwisdr_site"] = _this->kiwisdrSite;
-                config.conf["kiwisdr_loc"] = _this->kiwisdrLoc;
-                config.release(true);
-                _this->kiwiSdrClient.init(_this->kiwisdrSite);
-            });
-        }
-
-
-
-
-        SmGui::Text(("KiwiSDR site: " + _this->kiwisdrSite).c_str());
-        SmGui::Text(("Loc: " + _this->kiwisdrLoc).c_str());
-        SmGui::Text(("Status: " + std::string(_this->kiwiSdrClient.connectionStatus)).c_str());
-
-        long long int cst = sigpath::iqFrontEnd.getCurrentStreamTime();
-        std::time_t t = cst / 1000;
-        auto tmm = std::localtime(&t);
-        char streamTime[64];
-        strftime(streamTime, sizeof(streamTime), "%Y-%m-%d %H:%M:%S", tmm);
-        SmGui::Text(("Stream pos: " + std::string(streamTime)).c_str());
+        if (_this->running) { SmGui::BeginDisabled(); }
+        ImGui::InputText("Web888 Site", &_this->web888Site);
+        if (_this->running) { SmGui::EndDisabled(); }
+        
+        ImGui::Text("Status: %s", _this->kiwiSdrClient.getConnectionStatus().c_str());
     }
 
 
@@ -292,18 +240,17 @@ struct KiwiSDRSourceModule : public ModuleManager::Instance {
 
 MOD_EXPORT void _INIT_() {
     json def = json({});
-    config.setPath(std::string(core::getRoot()) + "/kiwisdr_source_config.json");
+    config.setPath(core::args["root"].s() + "/web888_config.json");
     config.load(def);
     config.enableAutoSave();
 }
 
 MOD_EXPORT ModuleManager::Instance* _CREATE_INSTANCE_(std::string name) {
-    auto root = std::string(core::getRoot());
-    return new KiwiSDRSourceModule(name, root);
+    return new Web888SourceModule(name);
 }
 
 MOD_EXPORT void _DELETE_INSTANCE_(ModuleManager::Instance* instance) {
-    delete (KiwiSDRSourceModule*)instance;
+    delete (Web888SourceModule*)instance;
 }
 
 MOD_EXPORT void _END_() {
