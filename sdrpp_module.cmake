@@ -17,6 +17,7 @@ if(MSVC)
 endif()
 
 # Set compile arguments
+set(CMAKE_CXX_STANDARD 17)
 target_compile_options(${PROJECT_NAME} PRIVATE ${SDRPP_MODULE_COMPILER_FLAGS})
 
 # Install directives

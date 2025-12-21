@@ -81,25 +81,27 @@ set(SDRPP_MODULE_CMAKE "${CMAKE_SOURCE_DIR}/sdrpp_module.cmake")
 set(SDRPP_CORE_ROOT "${CMAKE_SOURCE_DIR}/core/src/")
 
 set(CMAKE_OSX_DEPLOYMENT_TARGET "26.0")
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_C_STANDARD 11)
 
 # Compiler flags
 if (${CMAKE_BUILD_TYPE} MATCHES "Debug")
     # Debug Flags
     if (MSVC)
-        set(SDRPP_COMPILER_FLAGS /std:c++17 /EHsc)
+        set(SDRPP_COMPILER_FLAGS /EHsc)
     elseif (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-        set(SDRPP_COMPILER_FLAGS -g -Og -std=c++17 -Wno-unused-command-line-argument -undefined dynamic_lookup)
+        set(SDRPP_COMPILER_FLAGS -g -Og -Wno-unused-command-line-argument -undefined dynamic_lookup)
     else ()
-        set(SDRPP_COMPILER_FLAGS -g -Og -std=c++17)
+        set(SDRPP_COMPILER_FLAGS -g -Og)
     endif ()
 else()
     # Normal Flags
     if (MSVC)
-        set(SDRPP_COMPILER_FLAGS /O2 /Ob2 /std:c++17 /EHsc)
+        set(SDRPP_COMPILER_FLAGS /O2 /Ob2 /EHsc)
     elseif (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-        set(SDRPP_COMPILER_FLAGS -O3 -std=c++17 -Wno-unused-command-line-argument -undefined dynamic_lookup)
+        set(SDRPP_COMPILER_FLAGS -O3 -Wno-unused-command-line-argument -undefined dynamic_lookup)
     else ()
-        set(SDRPP_COMPILER_FLAGS -O3 -std=c++17)
+        set(SDRPP_COMPILER_FLAGS -O3)
     endif ()
 endif()
 set(SDRPP_MODULE_COMPILER_FLAGS ${SDRPP_COMPILER_FLAGS})
@@ -120,7 +122,6 @@ if (ANDROID)
     )
     set(CMAKE_C_STANDARD 11)
     set(CMAKE_CXX_STANDARD 14)
-    set(CMAKE_CXX14_EXTENSION_COMPILE_OPTION "-std=c++17")
 endif (ANDROID)
 
 # Core of SDR-888
@@ -139,6 +140,7 @@ add_subdirectory("sink_modules/audio_sink")
 
 # Decoders
 add_subdirectory("decoder_modules/radio")
+add_subdirectory("decoder_modules/ft8_decoder")
 
 # Misc
 add_subdirectory("misc_modules/recorder")
