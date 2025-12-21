@@ -102,7 +102,7 @@ namespace dsp::channel {
         // run() is unused when the block is started (we override doStart/doStop
         // to launch two stage workers). It is kept for compatibility and uses
         // the single-threaded path.
-        int run() {
+        int run() override {
             int count = base_type::_in->read();
             if (count < 0) { return -1; }
 
