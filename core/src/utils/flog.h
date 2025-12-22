@@ -12,6 +12,12 @@ namespace flog {
         _TYPE_COUNT
     };
 
+    #ifdef _DEBUG
+    const Type Target_Log_Level = TYPE_DEBUG;
+    #else
+    const Type Target_Log_Level = TYPE_INFO;
+    #endif
+
     // IO functions
     void __log__(Type type, const char* fmt, const std::vector<std::string>& args);
 
@@ -58,7 +64,9 @@ namespace flog {
 
     template <typename... Args>
     inline void debug(const char* fmt, Args... args) {
-        log(TYPE_DEBUG, fmt, args...);
+        if constexpr (Target_Log_Level <= TYPE_DEBUG) {
+            log(TYPE_DEBUG, fmt, args...);
+        }
     }
 
     template <typename... Args>
