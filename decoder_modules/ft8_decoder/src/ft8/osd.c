@@ -181,8 +181,8 @@ static int osd_cmp(const void* a, const void* b, void* c)
     uint8_t aa = *(uint8_t*)a;
     uint8_t bb = *(uint8_t*)b;
 
-    float fabs_a = fabs(codeword[aa]);
-    float fabs_b = fabs(codeword[bb]);
+    float fabs_a = fabsf(codeword[aa]);
+    float fabs_b = fabsf(codeword[bb]);
 
     // Reverse order (descending)
     if (fabs_a > fabs_b) return -1;
@@ -219,7 +219,11 @@ int osd_decode(const float codeword[FTX_LDPC_N], int depth, uint8_t out[FTX_LDPC
 #ifdef __APPLE__
     qsort_r(which, FTX_LDPC_N, sizeof(uint8_t), codeword, osd_cmp);
 #else
+#if defined(_MSC_VER)
+    qsort_s(which, FTX_LDPC_N, sizeof(uint8_t), osd_cmp, codeword);
+#else
     qsort_r(which, FTX_LDPC_N, sizeof(uint8_t), osd_cmp, codeword);
+#endif
 #endif
     // gen_sys[174 rows][91 cols] has a row per each of the 174 codeword bits,
     // indicating how to generate it by xor with each of the 91 plain bits.

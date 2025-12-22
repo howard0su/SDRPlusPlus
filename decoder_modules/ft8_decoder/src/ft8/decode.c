@@ -612,7 +612,7 @@ static void ft8_decode_multi_symbols(const WF_ELEM_T* wf, int num_bins, int n_sy
     const int n_bits = 3 * n_syms;
     const int n_tones = (1 << n_bits);
 
-    float s2[n_tones];
+    float *s2 = (float *)alloca(n_tones * sizeof(*s2));
 
     for (int j = 0; j < n_tones; ++j)
     {

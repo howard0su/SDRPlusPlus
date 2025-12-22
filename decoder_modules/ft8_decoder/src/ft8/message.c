@@ -940,6 +940,17 @@ static uint16_t packgrid(const char* grid4)
     return MAXGRID4 + 1;
 }
 
+#ifdef _MSC_VER
+static inline char* stpcpy(char* dst, const char* src)
+{
+    while ((*dst = *src) != 0) {
+        dst++;
+        src++;
+    }
+    return dst;
+}
+#endif
+
 static int unpackgrid(uint16_t igrid4, uint8_t ir, char* extra)
 {
     char* dst = extra;

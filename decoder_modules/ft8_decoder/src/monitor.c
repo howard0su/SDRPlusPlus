@@ -128,6 +128,11 @@ void monitor_reset(monitor_t* me)
     me->max_mag = -120.0f;
 }
 
+#ifdef _MSC_VER
+#include <malloc.h>
+#define alloca _alloca
+#endif
+
 // Compute FFT magnitudes (log wf) for a frame in the signal and update waterfall data
 // iq_frame: Array of complex IQ samples
 void monitor_process(monitor_t* me, const monitor_complex_t* iq_frame)
@@ -142,8 +147,8 @@ void monitor_process(monitor_t* me, const monitor_complex_t* iq_frame)
     // Loop over block subdivisions
     for (int time_sub = 0; time_sub < me->wf.time_osr; ++time_sub)
     {
-        kiss_fft_cpx timedata[me->nfft];
-        kiss_fft_cpx freqdata[me->nfft];
+        kiss_fft_cpx *timedata = (kiss_fft_cpx *)alloca(me->nfft * sizeof(*timedata));
+        kiss_fft_cpx *freqdata = (kiss_fft_cpx *)alloca(me->nfft * sizeof(*freqdata));
 
         // Shift the new data into analysis frame
         for (int pos = 0; pos < me->nfft - me->subblock_size; ++pos)

@@ -14,6 +14,7 @@
 #include <dsp/loop/fast_agc.h>
 
 #include "monitor.h"
+#include "ft8/message.h"
 
 #include "utils/flog.h"
 
@@ -21,6 +22,7 @@
 #include <cstring>
 #include <cmath>
 #include <unordered_map>
+#include <vector>
 
 SDRPP_MOD_INFO{ /* Name:            */ "ft8_decoder",
                 /* Description:     */ "FT8 decoder for SDR-888",
@@ -45,12 +47,65 @@ struct CallsignHashEntry {
     uint32_t hash;        // 8 MSBs: age, 22 LSBs: hash value
 };
 
+// Global callsign hash map used by the FT8 message code via the C interface.
+static std::mutex g_callsign_mutex;
+static std::unordered_map<uint32_t, std::pair<std::string, uint8_t>> g_callsign_map; // n22 -> (callsign, age)
+
+static bool callsign_lookup_impl(ftx_callsign_hash_type_t hash_type, uint32_t hash, char* callsign_out)
+{
+    std::lock_guard<std::mutex> lk(g_callsign_mutex);
+
+    if (hash_type == FTX_CALLSIGN_HASH_22_BITS) {
+        auto it = g_callsign_map.find(hash);
+        if (it == g_callsign_map.end())
+            return false;
+        strncpy(callsign_out, it->second.first.c_str(), 11);
+        callsign_out[11] = '\0';
+        return true;
+    }
+
+    // For 12- and 10-bit hashes, search for a matching prefix
+    for (const auto &kv : g_callsign_map) {
+        uint32_t n22 = kv.first;
+        if (hash_type == FTX_CALLSIGN_HASH_12_BITS) {
+            if ((n22 >> 10) == hash) {
+                strncpy(callsign_out, kv.second.first.c_str(), 11);
+                callsign_out[11] = '\0';
+                return true;
+            }
+        } else { // 10 bits
+            if ((n22 >> 12) == hash) {
+                strncpy(callsign_out, kv.second.first.c_str(), 11);
+                callsign_out[11] = '\0';
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+static void callsign_save_impl(const char* callsign, uint32_t n22)
+{
+    std::lock_guard<std::mutex> lk(g_callsign_mutex);
+
+    std::string s = callsign;
+    if (s.size() > 11) s.resize(11);
+    auto it = g_callsign_map.find(n22);
+    if (it == g_callsign_map.end()) {
+        g_callsign_map.emplace(n22, std::make_pair(s, (uint8_t)0));
+    } else {
+        it->second.first = s;
+        it->second.second = 0; // reset age
+    }
+}
+
 class FT8DecoderModule : public ModuleManager::Instance {
 public:
     FT8DecoderModule(std::string name) {
         this->name = name;
 
-        vfo = sigpath::vfoManager.createVFO(name, ImGui::WaterfallVFO::REF_CENTER, 0, BANDWIDTH, SAMPLE_RATE, SAMPLE_RATE, SAMPLE_RATE, true);
+        vfo = sigpath::vfoManager.createVFO(name, ImGui::WaterfallVFO::REF_LOWER, 0, BANDWIDTH, SAMPLE_RATE, SAMPLE_RATE, SAMPLE_RATE, true);
 
         agc.init(vfo->output, 1.0f, 1e6, 0.001f, 1.0f);
         sink.init(&agc.out, handler, this);
@@ -59,15 +114,17 @@ public:
         sink.start();
 
         // Initialize monitor
-        monitor_config_t mon_cfg = {
-            .f_min = 300,
-            .f_max = BANDWIDTH,
-            .sample_rate = (int)SAMPLE_RATE,
-            .time_osr = kTime_osr,
-            .freq_osr = kFreq_osr,
-            .protocol = FTX_PROTOCOL_FT8
-        };
+        monitor_config_t mon_cfg;
+        mon_cfg.f_min = 300;
+        mon_cfg.f_max = BANDWIDTH;
+        mon_cfg.sample_rate = (int)SAMPLE_RATE;
+        mon_cfg.time_osr = kTime_osr;
+        mon_cfg.freq_osr = kFreq_osr;
+        mon_cfg.protocol = FTX_PROTOCOL_FT8;
+
         monitor_init(&monitor, &mon_cfg);
+        // Ensure sample buffer is empty at start
+        sampleBuffer.clear();
 
         gui::menu.registerEntry(name, menuHandler, this, this);
     }
@@ -91,6 +148,9 @@ public:
         }
         agc.stop();
         sink.stop();
+
+        // clear any buffered samples
+        sampleBuffer.clear();
 
         enabled = false;
     }
@@ -132,22 +192,32 @@ private:
                 monitor_reset(&monitor);
                 state = COLLECT_SYMBOLS;
                 slotStartTime = now;
+                flog::info("FT8DecoderModule: COLLECT_SYMBOLS, sec = {}", sec);
             }
+
             return;
         }
 
-        // COLLECT_SYMBOLS state: process each block of samples directly
-        for (int frame_pos = 0; frame_pos + monitor.block_size <= count; frame_pos += monitor.block_size) {
+        // COLLECT_SYMBOLS state: buffer incoming samples until we have full blocks
+        // Append incoming samples to buffer
+        sampleBuffer.insert(sampleBuffer.end(), data, data + count);
+
+        // Process full blocks from the buffer
+        while ((int)sampleBuffer.size() >= monitor.block_size) {
             // Check if we have enough waterfall data
             if (monitor.wf.num_blocks >= monitor.wf.max_blocks) {
+                flog::info("FT8DecoderModule: Decoding slot, collected {} blocks", monitor.wf.num_blocks);
                 // Enough data collected, decode and reset
                 decodeSlot();
                 state = WAIT_FOR_START;
+                sampleBuffer.clear();
                 return;
             }
 
-            // Process the IQ frame
-            monitor_process(&monitor, reinterpret_cast<const monitor_complex_t*>(data + frame_pos));
+            monitor_process(&monitor, reinterpret_cast<const monitor_complex_t*>(sampleBuffer.data()));
+
+            // remove consumed samples from the front of the buffer
+            sampleBuffer.erase(sampleBuffer.begin(), sampleBuffer.begin() + monitor.block_size);
         }
     }
 
@@ -213,17 +283,24 @@ private:
     }
 
     static ftx_callsign_hash_interface_t* getCallsignHashInterface() {
-        // Use a stub interface for now - callsign hashing not implemented
-        static ftx_callsign_hash_interface_t interface = {
-            .lookup_hash = nullptr,
-            .save_hash = nullptr
-        };
-        return &interface;
+        static ftx_callsign_hash_interface_t callsign_if;
+        callsign_if.lookup_hash = &callsign_lookup_impl;
+        callsign_if.save_hash = &callsign_save_impl;
+        return &callsign_if;
     }
 
     void cleanupCallsignHashTable(uint8_t max_age) {
-        // Cleanup not needed in current implementation
-        // In future, could implement proper callsign hash management
+        std::lock_guard<std::mutex> lk(g_callsign_mutex);
+
+        // Increment age for all entries and remove entries older than max_age
+        for (auto it = g_callsign_map.begin(); it != g_callsign_map.end();) {
+            it->second.second++;
+            if (it->second.second > max_age) {
+                it = g_callsign_map.erase(it);
+            } else {
+                ++it;
+            }
+        }
     }
 
     std::string name;
@@ -242,6 +319,8 @@ private:
     } state = WAIT_FOR_START;
 
     // Message storage using hash for deduplication
+    // Buffer for incoming samples when count < monitor.block_size
+    std::vector<dsp::complex_t> sampleBuffer;
     std::unordered_map<uint32_t, ftx_message_t> decodedMessages;
     std::unordered_map<std::string, CallsignHashEntry> callsignHashTable;
 };
