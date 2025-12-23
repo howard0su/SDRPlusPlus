@@ -23,8 +23,11 @@ ConfigManager config;
 
 #define CONCAT(a, b) ((std::string(a) + b).c_str())
 
-// must be 3x
-#define SDDC_ACCUMRATE_BUFFER_COUNT 120
+// The following count have to be choose as
+// 3 * N = 4 * BufferCount + 1
+// where N is integer, so that the FFT bins align correctly
+// the values we can use 41, 80, 92， 101
+#define SDDC_ACCUMRATE_BUFFER_COUNT 101
 #define SDDC_BUFFER_SIZE (16 * 1024 / 2)
 
 #define TUNER_IF_FREQUENCY 4570000.0
@@ -338,7 +341,6 @@ private:
         sddc_get_rf_gain(openDev, &val);
         rfGain = (int)val;
 
-        bufferSize = SDDC_BUFFER_SIZE * SDDC_ACCUMRATE_BUFFER_COUNT;
         buffercount = 0;
 
         running = true;
@@ -481,7 +483,7 @@ private:
         _this->buffercount++;
         // If buffer is full, swap and reset fill
         if (_this->buffercount == SDDC_ACCUMRATE_BUFFER_COUNT) {
-            _this->dataIn.swap(_this->bufferSize);
+            _this->dataIn.swap(SDDC_BUFFER_SIZE * SDDC_ACCUMRATE_BUFFER_COUNT);
             _this->buffercount = 0;
         }
     }
@@ -509,7 +511,6 @@ private:
 
     sddc_dev_t* openDev;
 
-    int bufferSize;
     int buffercount;
     std::thread workerThread;
     std::atomic<bool> run = false;
