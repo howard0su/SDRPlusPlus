@@ -379,7 +379,10 @@ private:
                 sddc_set_center_freq64(_this->openDev, (uint64_t)freq);
             }
             else {
-                _this->ddc.setOffset(freq);
+                if (freq < _this->sampleRate)
+                {
+                    _this->ddc.setOffset(freq);
+                }
             }
         }
         _this->freq = freq;
