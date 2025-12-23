@@ -9,6 +9,8 @@
 #include <assert.h>
 #include "libsddc.h"
 
+#include "fft_rx_vfo.h"
+
 SDRPP_MOD_INFO{
     /* Name:            */ "sddc_source",
     /* Description:     */ "SDDC Source Module",
@@ -21,10 +23,20 @@ ConfigManager config;
 
 #define CONCAT(a, b) ((std::string(a) + b).c_str())
 
-#define SDDC_ACCUMRATE_BUFFER_COUNT 120
+// The following count have to be choose as
+// 3 * N = 4 * BufferCount + 1
+// where N is integer, so that the FFT bins align correctly
+// the values we can use 41, 80, 92， 101
+#define SDDC_ACCUMRATE_BUFFER_COUNT 101
 #define SDDC_BUFFER_SIZE (16 * 1024 / 2)
 
 #define TUNER_IF_FREQUENCY 4570000.0
+
+// GAINFACTORS to be adjusted with lab reference source measured with HDSDR Smeter rms mode  
+#define BBRF103_GAINFACTOR 	(7.800e-8f)       // BBRF103
+#define HF103_GAINFACTOR   	(1.140e-8f)      // HF103
+#define RX888_GAINFACTOR   	(0.695e-8f)     // RX888
+#define RX888mk2_GAINFACTOR (1.080e-8f)      // RX888mk2
 
 class SDDCSourceModule : public ModuleManager::Instance {
 public:
@@ -34,7 +46,7 @@ public:
         sampleRate = 128 * 1000 * 1000.0;
 
         // Initialize the DDC
-        ddc.init(&ddcIn, sampleRate, sampleRate, sampleRate, 0.0);
+        ddc.init(&dataIn, RX888mk2_GAINFACTOR);
 
         handler.ctx = this;
         handler.selectHandler = menuSelected;
@@ -54,7 +66,7 @@ public:
         config.release();
         select(devSerial);
 
-        sigpath::sourceManager.registerSource("SDDC", &handler);
+        sigpath::sourceManager.registerSource("RX-888", &handler);
     }
 
     ~SDDCSourceModule() {
@@ -84,13 +96,13 @@ private:
     std::string getBandwdithScaled(double bw) {
         char buf[1024];
         if (bw >= 1000000.0) {
-            sprintf(buf, "%.1lfMHz", bw / 1000000.0);
+            snprintf(buf, 1024, "%.1lfMHz", bw / 1000000.0);
         }
         else if (bw >= 1000.0) {
-            sprintf(buf, "%.1lfKHz", bw / 1000.0);
+            snprintf(buf, 1024, "%.1lfKHz", bw / 1000.0);
         }
         else {
-            sprintf(buf, "%.1lfHz", bw);
+            snprintf(buf, 1024, "%.1lfHz", bw);
         }
         return std::string(buf);
     }
@@ -148,6 +160,20 @@ private:
             flog::error("Failed to open device: {}", err);
             return;
         }
+
+        // determine the device type
+        char product[256];
+        sddc_get_usb_strings(dev, NULL, product, NULL);
+
+        float gainFactor = RX888_GAINFACTOR;
+        if (strstr(product, "RX888mk2")) {
+            gainFactor = RX888mk2_GAINFACTOR;
+        }
+        else if (strstr(product, "RX888")) {
+            gainFactor = RX888_GAINFACTOR;
+        }
+
+        ddc.setGainFactor(gainFactor);
 
         // Load default options
         port = PORT_HF;
@@ -315,16 +341,11 @@ private:
         sddc_get_rf_gain(openDev, &val);
         rfGain = (int)val;
 
-        sddc_read_async(openDev, &sddc_async_callback, this);
-
-        bufferSize = SDDC_BUFFER_SIZE * SDDC_ACCUMRATE_BUFFER_COUNT;
         buffercount = 0;
 
-        // Start worker
-        run = true;
-        workerThread = std::thread(&SDDCSourceModule::sddc_convert_to_float, this);
-
         running = true;
+        sddc_read_async(openDev, &sddc_async_callback, this);
+
         flog::info("SDDCSourceModule '{0}': Start!", name);
     }
 
@@ -337,10 +358,6 @@ private:
 
     void stop() {
         running = false;
-
-        run = false;
-
-        if (workerThread.joinable()) { workerThread.join(); }
 
         dataIn.stopWriter();
         sddc_cancel_async(openDev);
@@ -362,7 +379,10 @@ private:
                 sddc_set_center_freq64(_this->openDev, (uint64_t)freq);
             }
             else {
-                _this->ddc.setOffset(freq);
+                if (freq < _this->sampleRate)
+                {
+                    _this->ddc.setOffset(freq);
+                }
             }
         }
         _this->freq = freq;
@@ -466,38 +486,8 @@ private:
         _this->buffercount++;
         // If buffer is full, swap and reset fill
         if (_this->buffercount == SDDC_ACCUMRATE_BUFFER_COUNT) {
-            _this->dataIn.swap(_this->bufferSize);
+            _this->dataIn.swap(SDDC_BUFFER_SIZE * SDDC_ACCUMRATE_BUFFER_COUNT);
             _this->buffercount = 0;
-        }
-    }
-
-    void sddc_convert_to_float() {
-        float* fbuffer;
-        float* nullBuffer;
-
-        fbuffer = dsp::buffer::alloc<float>(bufferSize);
-        nullBuffer = dsp::buffer::alloc<float>(bufferSize);
-
-        // Clear the null buffer
-        dsp::buffer::clear(nullBuffer, bufferSize);
-
-        while (run) {
-            int count = dataIn.read();
-            const int16_t* buffer = dataIn.readBuf;
-
-            // Convert the samples to float
-            volk_16i_s32f_convert_32f(fbuffer, dataIn.readBuf, 32768.0f, count);
-
-            // readBuf is not more needed
-            dataIn.flush();
-
-            // Interleave into a complex value
-            volk_32f_x2_interleave_32fc((lv_32fc_t*)ddcIn.writeBuf, fbuffer, nullBuffer, count);
-
-            // Send samples to the DDC
-            if (!ddcIn.swap(count)) {
-                break;
-            }
         }
     }
 
@@ -524,7 +514,6 @@ private:
 
     sddc_dev_t* openDev;
 
-    int bufferSize;
     int buffercount;
     std::thread workerThread;
     std::atomic<bool> run = false;
@@ -533,9 +522,8 @@ private:
     int rf_gain_min = 0, rf_gain_max = 0;
     int if_gain_min = 0, if_gain_max = 0;
 
-    dsp::stream<dsp::complex_t> ddcIn;
+    dsp::channel::FFTRxVFO ddc;
     dsp::stream<int16_t> dataIn;
-    dsp::channel::RxVFO ddc;
 };
 
 MOD_EXPORT void _INIT_() {

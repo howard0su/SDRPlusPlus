@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.13)
 project(sddc_source)
 
-file(GLOB SRC "src/*.cpp")
+file(GLOB SRC "src/*.cpp" "src/pffft/*.cpp")
 
 # TODO: Download release from web
 
