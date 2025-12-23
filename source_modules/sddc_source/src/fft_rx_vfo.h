@@ -143,10 +143,10 @@ namespace dsp::channel {
             convert_float(in, &ADCinTime[halfFft], count);
             
             // Calculate the parameters for the first half
-		    auto shift_count = min(mfft/2, halfFft - mtunebin);
+		    auto shift_count = std::min(mfft/2, halfFft - mtunebin);
             auto source = &ADCinFreq[mtunebin];
             // Calculate the parameters for the second half
-            auto start = max(0, mfft / 2 - mtunebin);
+            auto start = std::max(0, mfft / 2 - mtunebin);
             auto source2 = &ADCinFreq[mtunebin - mfft / 2];
             auto dest = &inFreqTmp[mfft / 2];
             auto filter2 = &filter[halfFft - mfft / 2];
