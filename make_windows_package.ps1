@@ -6,30 +6,45 @@ if ($args.Count -lt 2) {
 
 $build_dir = $args[0]
 $root_dir = $args[1]
+$build_type = "RelWithDebInfo"
+if ($args.Count -ge 3) {
+	$build_type = $args[2]
+}
+
+function Copy-ModuleDlls($relativePath, $dllName) {
+	$srcDir = Join-Path $build_dir $relativePath
+	New-Item -ItemType Directory -Force -Path 'sdrpp_windows_x64/modules' | Out-Null
+
+	Copy-Item -Force (Join-Path $srcDir $dllName) 'sdrpp_windows_x64/modules/'
+
+	Get-ChildItem -Path $srcDir -Filter '*.dll' -File |
+		Where-Object { $_.Name -ne $dllName } |
+		ForEach-Object { Copy-Item -Force $_.FullName 'sdrpp_windows_x64/' }
+}
 
 mkdir -Force sdrpp_windows_x64
 
 # Copy root
-cp -Force -Recurse $root_dir/*.exe sdrpp_windows_x64/
-cp -Force -Recurse $root_dir/*.dll sdrpp_windows_x64/
+cp -Force -Recurse $root_dir/* sdrpp_windows_x64/
 
 # Copy core
-cp -Force $build_dir/RelWithDebInfo/* sdrpp_windows_x64/
+cp -Force $build_dir/$build_type/*.dll sdrpp_windows_x64/
+cp -Force $build_dir/$build_type/*.exe sdrpp_windows_x64/
 cp -Force 'C:/Program Files/PothosSDR/bin/volk.dll' sdrpp_windows_x64/
 
 # Copy source modules
-cp -Force $build_dir/source_modules/audio_source/RelWithDebInfo/audio_source.dll sdrpp_windows_x64/modules/
-cp -Force $build_dir/source_modules/file_source/RelWithDebInfo/file_source.dll sdrpp_windows_x64/modules/
-cp -Force $build_dir/source_modules/network_source/RelWithDebInfo/network_source.dll sdrpp_windows_x64/modules/
-cp -Force $build_dir/source_modules/sddc_source/RelWithDebInfo/sddc_source.dll sdrpp_windows_x64/modules/
-cp -Force $build_dir/source_modules/web888_source/RelWithDebInfo/web888_source.dll sdrpp_windows_x64/modules/
-
+Copy-ModuleDlls "source_modules/audio_source/$build_type" 'audio_source.dll'
+Copy-ModuleDlls "source_modules/file_source/$build_type" 'file_source.dll'
+# Copy-ModuleDlls "source_modules/network_source/$build_type" 'network_source.dll'
+Copy-ModuleDlls "source_modules/sddc_source/$build_type" 'sddc_source.dll'
+Copy-ModuleDlls "source_modules/web888_source/$build_type" 'web888_source.dll'
 # Copy sink modules
-cp -Force $build_dir/sink_modules/audio_sink/RelWithDebInfo/audio_sink.dll sdrpp_windows_x64/modules/
-cp -Force $build_dir/source_modules/audio_source/RelWithDebInfo/rtaudio.dll sdrpp_windows_x64/
+Copy-ModuleDlls "sink_modules/audio_sink/$build_type" 'audio_sink.dll'
 
 # Copy decoder modules
-cp -Force $build_dir/decoder_modules/radio/RelWithDebInfo/radio.dll sdrpp_windows_x64/modules/
+# Example usage:
+Copy-ModuleDlls "decoder_modules/radio/$build_type" 'radio.dll'
+Copy-ModuleDlls "decoder_modules/ft8_decoder/$build_type" 'ft8_decoder.dll'
 
 
 # Copy supporting libs
