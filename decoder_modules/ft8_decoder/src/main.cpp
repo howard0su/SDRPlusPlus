@@ -197,27 +197,38 @@ private:
 
             return;
         }
+        else if (state == COLLECT_SYMBOLS) {
+            // COLLECT_SYMBOLS state: buffer incoming samples until we have full blocks
+            // Append incoming samples to buffer
+            sampleBuffer.insert(sampleBuffer.end(), data, data + count);
 
-        // COLLECT_SYMBOLS state: buffer incoming samples until we have full blocks
-        // Append incoming samples to buffer
-        sampleBuffer.insert(sampleBuffer.end(), data, data + count);
+            // Process full blocks from the buffer
+            while ((int)sampleBuffer.size() >= monitor.block_size) {
+                // Check if we have enough waterfall data
+                if (monitor.wf.num_blocks >= monitor.wf.max_blocks) {
+                    flog::info("FT8DecoderModule: Decoding slot, collected {} blocks", monitor.wf.num_blocks);
+                    // Enough data collected, decode and reset
+                    state = DECODING;
+                    std::thread decodeThread([this]() {
+                        try {
+                            this->decodeSlot();
+                            this->state = WAIT_FOR_START;
+                            this->sampleBuffer.clear();
+                        } catch (const std::exception &e) {
+                            flog::error("FT8DecoderModule decode thread exception: {}", e.what());
+                        } catch (...) {
+                            flog::error("FT8DecoderModule decode thread unknown exception");
+                        }
+                    });
+                    decodeThread.detach();
+                    return;
+                }
 
-        // Process full blocks from the buffer
-        while ((int)sampleBuffer.size() >= monitor.block_size) {
-            // Check if we have enough waterfall data
-            if (monitor.wf.num_blocks >= monitor.wf.max_blocks) {
-                flog::info("FT8DecoderModule: Decoding slot, collected {} blocks", monitor.wf.num_blocks);
-                // Enough data collected, decode and reset
-                decodeSlot();
-                state = WAIT_FOR_START;
-                sampleBuffer.clear();
-                return;
+                monitor_process(&monitor, reinterpret_cast<const monitor_complex_t*>(sampleBuffer.data()));
+
+                // remove consumed samples from the front of the buffer
+                sampleBuffer.erase(sampleBuffer.begin(), sampleBuffer.begin() + monitor.block_size);
             }
-
-            monitor_process(&monitor, reinterpret_cast<const monitor_complex_t*>(sampleBuffer.data()));
-
-            // remove consumed samples from the front of the buffer
-            sampleBuffer.erase(sampleBuffer.begin(), sampleBuffer.begin() + monitor.block_size);
         }
     }
 
@@ -316,6 +327,7 @@ private:
     enum {
         WAIT_FOR_START,
         COLLECT_SYMBOLS,
+        DECODING,
     } state = WAIT_FOR_START;
 
     // Message storage using hash for deduplication
