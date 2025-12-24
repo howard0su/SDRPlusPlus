@@ -9,6 +9,7 @@
 #include <dsp/noise_reduction/noise_blanker.h>
 #include <dsp/noise_reduction/fm_if.h>
 #include <dsp/noise_reduction/squelch.h>
+#include <dsp/noise_reduction/anr.h>
 #include <dsp/multirate/rational_resampler.h>
 #include <dsp/filter/deephasis.h>
 #include <core.h>
@@ -83,8 +84,10 @@ public:
 
         resamp.init(NULL, 250000.0, 48000.0);
         deemp.init(NULL, 50e-6, 48000.0);
+        anr.init(NULL, 5);
 
         afChain.addBlock(&resamp, true);
+        afChain.addBlock(&anr, false);
         afChain.addBlock(&deemp, false);
 
         // Initialize the sink
@@ -246,6 +249,20 @@ private:
             }
         }
 
+        if (_this->anrAllowed) {
+            // ANR
+            if (ImGui::Checkbox(("Adaptive Noise Reduction##_radio_anr_ena_" + _this->name).c_str(), &_this->anrEnabled)) {
+                _this->setANREnabled(_this->anrEnabled);
+            }
+            if (!_this->anrEnabled && _this->enabled) { style::beginDisabled(); }
+            ImGui::SameLine();
+            ImGui::SetNextItemWidth(menuWidth - ImGui::GetCursorPosX());
+            if (ImGui::SliderInt(("##_radio_anr_lvl_" + _this->name).c_str(), &_this->anrIntensity, 0, 30, "%d")) {
+                _this->setANRIntensity(_this->anrIntensity);
+            }
+            if (!_this->anrEnabled && _this->enabled) { style::endDisabled(); }
+        }
+
         // Noise blanker
         if (_this->nbAllowed) {
             if (ImGui::Checkbox(("Noise blanker (W.I.P.)##_radio_nb_ena_" + _this->name).c_str(), &_this->nbEnabled)) {
@@ -259,7 +276,6 @@ private:
             }
             if (!_this->nbEnabled && _this->enabled) { style::endDisabled(); }
         }
-        
 
         // Squelch
         if (ImGui::Checkbox(("Squelch##_radio_sqelch_ena_" + _this->name).c_str(), &_this->squelchEnabled)) {
@@ -386,6 +402,7 @@ private:
         nbAllowed = selectedDemod->getNBAllowed();
         nbEnabled = false;
         nbLevel = 0.0f;
+        anrIntensity = 5;
         double ifSamplerate = selectedDemod->getIFSampleRate();
         config.acquire();
         if (config.conf[name][selectedDemod->getName()].contains("bandwidth")) {
@@ -443,6 +460,9 @@ private:
         nb.setRate(500.0 / ifSamplerate);
         setNBLevel(nbLevel);
         setNBEnabled(nbAllowed && nbEnabled);
+
+        // Configure ANR
+        setANRIntensity(anrIntensity);
 
         // Configure FM IF Noise Reduction
         setIFNRPreset((selectedDemodID == RADIO_DEMOD_NFM) ? ifnrPresets[fmIFPresetId] : IFNR_PRESET_BROADCAST);
@@ -520,6 +540,27 @@ private:
         // Save config
         config.acquire();
         config.conf[name][selectedDemod->getName()]["deempMode"] = deempModes.key(deempId);
+        config.release(true);
+    }
+    
+    void setANREnabled(bool enable) {
+        anrEnabled = enable;
+        if (!postProcEnabled || !selectedDemod) { return; }
+        afChain.setBlockEnabled(&anr, anrEnabled, [=](dsp::stream<dsp::stereo_t>* out){ stream.setInput(out); });
+
+        // Save config
+        config.acquire();
+        config.conf[name][selectedDemod->getName()]["anrEnabled"] = anrEnabled;
+        config.release(true);
+    }
+
+    void setANRIntensity(int intensity) {
+        anrIntensity = std::clamp<int>(intensity, 0, 30);
+        anr.setIntensity(anrIntensity);
+
+        // Save config
+        config.acquire();
+        config.conf[name][selectedDemod->getName()]["anrIntensity"] = anrIntensity;
         config.release(true);
     }
 
@@ -671,6 +712,7 @@ private:
     dsp::noise_reduction::NoiseBlanker nb;
     dsp::noise_reduction::FMIF fmnr;
     dsp::noise_reduction::Squelch squelch;
+    dsp::noise_reduction::ANR anr;
 
     // Audio chain
     dsp::stream<dsp::stereo_t> dummyAudioStream;
@@ -711,6 +753,10 @@ private:
     bool nbAllowed;
     bool nbEnabled = false;
     float nbLevel = 10.0f;
+
+    bool anrAllowed = true;
+    bool anrEnabled = false;
+    int anrIntensity = 5;
 
     const double MIN_NB = 1.0;
     const double MAX_NB = 10.0;
