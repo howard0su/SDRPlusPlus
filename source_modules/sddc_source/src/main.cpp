@@ -290,7 +290,7 @@ private:
             return;
         }
 
-        uint32_t xtal_freq = sampleRate * 2;
+        xtal_freq = sampleRate * 2;
         if (sampleRate < 32e6) {
             xtal_freq = 64e6;
         } else {
@@ -379,7 +379,7 @@ private:
                 sddc_set_center_freq64(_this->openDev, (uint64_t)freq);
             }
             else {
-                if (freq < _this->sampleRate)
+                if (freq < _this->xtal_freq / 2)
                 {
                     _this->ddc.setOffset(freq);
                 }
@@ -500,6 +500,7 @@ private:
     OptionList<std::string, int> devices;
     int selectedDevId = 0;
 
+    uint32_t xtal_freq;
     OptionList<int, double> samplerates;
     int srId = 0;
     double sampleRate;
