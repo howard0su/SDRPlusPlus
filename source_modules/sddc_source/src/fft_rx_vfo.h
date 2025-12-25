@@ -38,9 +38,8 @@ namespace dsp::channel {
 
         void init(stream<int16_t>* in, float gain, int fftSize = 8192) {
             _inSamplerate = 64000000;
-            _outSamplerate = 32000000;
+            _outSamplerate = 0;
             halfFft = fftSize / 2;
-
 
             _mtunebin = fftSize / 2 / 4;
             GainScale = gain;
@@ -56,7 +55,7 @@ namespace dsp::channel {
             plan_t2f_r2c = fftwf_plan_dft_r2c_1d(2 * halfFft, ADCinTime, ADCinFreq, FFTW_PATIENT);
             plan_f2t_c2c = fftwf_plan_dft_1d(halfFft, inFreqTmp, inFreqTmp, FFTW_BACKWARD, FFTW_PATIENT);
 
-            generateFreqFilter(gain, 0);
+            setOutSamplerate(32000000, 16000000);
             base_type::init(in);
         }
 
@@ -115,6 +114,8 @@ namespace dsp::channel {
         void setOffset(double offset) {
             assert(base_type::_block_init);
             std::lock_guard<std::recursive_mutex> lck(base_type::ctrlMtx);
+            if (offset > _inSamplerate)
+                return;
 
             _lsb = offset < 0;
 
@@ -167,7 +168,7 @@ namespace dsp::channel {
             base_type::_in->flush();
 
             // Calculate the parameters for the first half
-            auto shift_count = std::min(mfft / 2, halfFft - mtunebin);
+            size_t shift_count = std::min(mfft / 2, halfFft - mtunebin);
             auto source = &ADCinFreq[mtunebin];
             // Calculate the parameters for the second half
             auto start = std::max(0, mfft / 2 - mtunebin);
@@ -181,7 +182,8 @@ namespace dsp::channel {
             int fftPerBuf = count / (3 * halfFft / 2) + 1; // number of ffts per buffer with 256|768 overlap
             float* real_input = ADCinTime;
             {
-                // k == 0, first case
+                // k == 0, first case, have to do differently as
+                // the offset is different, discard samples are different
                 {
                     // FFT first stage: time to frequency, real to complex
                     // 'full' transformation size: 2 * halfFft
@@ -301,19 +303,19 @@ namespace dsp::channel {
             volk_16i_s32f_convert_32f(output, input, 1.0f, count);
         }
 
-        static inline void shift_freq(fftwf_complex* dest, const fftwf_complex* source1, const fftwf_complex* source2, int count) {
+        static inline void shift_freq(fftwf_complex* dest, const fftwf_complex* source1, const fftwf_complex* source2, size_t count) {
             // Use VOLK for complex multiplication
             volk_32fc_x2_multiply_32fc((lv_32fc_t*)(dest), (lv_32fc_t*)(source1), (lv_32fc_t*)(source2), count);
         }
 
         template <bool flip>
-        static inline void copy(fftwf_complex* dest, const fftwf_complex* source, int count) {
+        static inline void copy(fftwf_complex* dest, const fftwf_complex* source, size_t count) {
             if constexpr (!flip) {
                 memcpy(dest, source, count * sizeof(fftwf_complex));
             }
             else {
                 // VOLK does not provide a direct function to negate imaginary part, so use a loop
-                for (int i = 0; i < count; i++) {
+                for (size_t i = 0; i < count; i++) {
                     dest[i][0] = source[i][0];
                     dest[i][1] = -source[i][1];
                 }
@@ -356,7 +358,7 @@ namespace dsp::channel {
             fftwf_free(pfilterht);
 
             fftwf_destroy_plan(plan_f2t_c2c);
-            plan_f2t_c2c = fftwf_plan_dft_1d(halfFft / (1 << _decimationIndex), inFreqTmp, inFreqTmp, FFTW_BACKWARD, FFTW_PATIENT);
+            plan_f2t_c2c = fftwf_plan_dft_1d(halfFft / (1 << index), inFreqTmp, inFreqTmp, FFTW_BACKWARD, FFTW_PATIENT);
         }
 
         void cleanup() {
@@ -401,7 +403,7 @@ namespace dsp::channel {
         int _blockSize;
         int _overlap;
         int _outputSize;
-        int _decimationIndex; // the index of decimation, log of 2
+        int _decimationIndex = 1; // the index of decimation, log of 2
         bool _lsb;
         int _mtunebin;
 
