@@ -6,7 +6,13 @@
 #include "osd.h"
 
 #include <stdbool.h>
+#include <stdlib.h>
 #include <math.h>
+
+#ifdef _MSC_VER
+#include <malloc.h>
+#define alloca _alloca
+#endif
 
 //#define LOG_LEVEL LOG_DEBUG
 #include "debug.h"

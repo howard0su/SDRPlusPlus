@@ -142,12 +142,13 @@ public:
     }
 
     void disable() {
+        agc.stop();
+        sink.stop();
+
         if (vfo) {
             sigpath::vfoManager.deleteVFO(vfo);
             vfo = nullptr;
         }
-        agc.stop();
-        sink.stop();
 
         // clear any buffered samples
         sampleBuffer.clear();

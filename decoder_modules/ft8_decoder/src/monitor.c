@@ -5,6 +5,11 @@
 
 #include <stdlib.h>
 
+#ifdef _MSC_VER
+#include <malloc.h>
+#define alloca _alloca
+#endif
+
 static float hann_i(int i, int N)
 {
     float x = sinf((float)M_PI * i / N);
@@ -127,11 +132,6 @@ void monitor_reset(monitor_t* me)
     me->wf.num_blocks = 0;
     me->max_mag = -120.0f;
 }
-
-#ifdef _MSC_VER
-#include <malloc.h>
-#define alloca _alloca
-#endif
 
 // Compute FFT magnitudes (log wf) for a frame in the signal and update waterfall data
 // iq_frame: Array of complex IQ samples
