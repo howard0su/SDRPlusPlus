@@ -4,7 +4,6 @@
 #include <signal_path/signal_path.h>
 #include <signal_path/sink.h>
 #include <dsp/buffer/packer.h>
-#include <dsp/convert/stereo_to_mono.h>
 #include <utils/flog.h>
 #include <RtAudio.h>
 #include <config.h>
@@ -27,8 +26,6 @@ public:
     AudioSink(SinkManager::Stream* stream, std::string streamName) {
         _stream = stream;
         _streamName = streamName;
-        s2m.init(_stream->sinkOut);
-        monoPacker.init(&s2m.out, 512);
         stereoPacker.init(_stream->sinkOut, 512);
 
 #if RTAUDIO_VERSION_MAJOR >= 6
@@ -208,14 +205,10 @@ private:
     }
 
     void doStop() {
-        s2m.stop();
-        monoPacker.stop();
         stereoPacker.stop();
-        monoPacker.out.stopReader();
         stereoPacker.out.stopReader();
         audio.stopStream();
         audio.closeStream();
-        monoPacker.out.clearReadStop();
         stereoPacker.out.clearReadStop();
     }
 
@@ -230,8 +223,6 @@ private:
     }
 
     SinkManager::Stream* _stream;
-    dsp::convert::StereoToMono s2m;
-    dsp::buffer::Packer<float> monoPacker;
     dsp::buffer::Packer<dsp::stereo_t> stereoPacker;
 
     std::string _streamName;
