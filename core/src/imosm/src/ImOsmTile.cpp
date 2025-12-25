@@ -1,6 +1,7 @@
 #include "ImOsmTile.h"
-#include <GLFW/glfw3.h>
 #include <stb_image.h>
+
+#include "backend.h"
 
 namespace ImOsm {
 ImOsm::Tile::Tile(int z, int x, int y, const std::vector<std::byte> &rawBlob,
@@ -13,7 +14,7 @@ ImOsm::Tile::Tile(int z, int x, int y, const std::vector<std::byte> &rawBlob,
 
 Tile::~Tile() {
   if (_id != 0) {
-    glDeleteTextures(1, &_id);
+    backend::deleteTexture(_id);
   }
 }
 
@@ -30,11 +31,7 @@ const char *Tile::rgbaBlob() const {
 size_t Tile::rgbaBlobSize() const { return _rgbaBlob.size(); }
 
 ImTextureID Tile::texture() const {
-  return (ImTextureID)(intptr_t)glID();
-}
-
-GLuint Tile::glID() const {
-  if (_id == 0) {
+    if (_id == 0) {
     if (_rgbaBlob.empty()) {
         stbLoad();
     }
@@ -60,12 +57,8 @@ void Tile::stbLoad() const {
 }
 
 void Tile::glLoad() const {
-  glGenTextures(1, &_id);
-  glBindTexture(GL_TEXTURE_2D, _id);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-  glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, _pxW, _pxH, 0, GL_RGBA,
-               GL_UNSIGNED_BYTE, rgbaBlob());
+  _id = backend::createTexture(
+    _pxW, _pxH, rgbaBlob()
+  );
 }
 }; // namespace ImOsm

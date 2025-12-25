@@ -30,18 +30,17 @@ public:
   TileTexture(int size, const std::vector<std::byte> &blob);
   ~TileTexture();
 
-  inline GLuint glID() const {
-    if (_id == 0) {
+  inline ImTextureID imID() const {
+        if (_id == 0) {
       loadTexture();
     }
     return _id;
   }
-  inline ImTextureID imID() const { return (ImTextureID)(intptr_t)glID(); }
 
 private:
   int _width{256}, _height{256}, _channels{};
   std::vector<std::byte> _blob;
-  mutable GLuint _id{0};
+  mutable ImTextureID _id{0};
 
   void loadTexture() const;
 };

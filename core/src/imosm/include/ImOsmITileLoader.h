@@ -1,8 +1,7 @@
 #pragma once
+#include "imgui.h"
 
 namespace ImOsm {
-using ImTextureID = void *;
-
 class ITileLoader {
 public:
   virtual ~ITileLoader() = default;

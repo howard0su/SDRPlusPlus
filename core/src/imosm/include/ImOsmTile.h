@@ -19,9 +19,7 @@ public:
   virtual ImTextureID texture() const override;
 
 private:
-  using GLuint = unsigned int;
-
-  GLuint glID() const;
+  ImTextureID glID() const;
   void stbLoad() const;
   void glLoad() const;
 
@@ -30,6 +28,6 @@ private:
   mutable int _pxW{}, _pxH{};
   mutable int _channels{};
   mutable std::vector<std::byte> _rgbaBlob;
-  mutable GLuint _id{0};
+  mutable ImTextureID _id{0};
 };
 } // namespace ImOsm

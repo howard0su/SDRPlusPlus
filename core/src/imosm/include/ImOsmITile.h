@@ -1,9 +1,7 @@
 #pragma once
+#include "imgui.h"
 
 namespace ImOsm {
-using ImTextureID = void *;
-using size_t = unsigned long;
-
 class ITile {
 public:
   virtual ~ITile() = default;

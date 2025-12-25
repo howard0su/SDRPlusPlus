@@ -1,6 +1,7 @@
 #include "ImOsmTileTexture.h"
 #include <cassert>
 #include <cmath>
+#include "backend.h"
 
 namespace ImOsm {
 namespace Old {
@@ -31,16 +32,12 @@ TileTexture::TileTexture(int size, const std::vector<std::byte> &blob) {
   }
 }
 
-TileTexture::~TileTexture() { glDeleteTextures(1, &_id); }
+TileTexture::~TileTexture() { backend::deleteTexture(_id); }
 
 void TileTexture::loadTexture() const {
-  glGenTextures(1, &_id);
-  glBindTexture(GL_TEXTURE_2D, _id);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-  glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, _width, _height, 0, GL_RGBA,
-               GL_UNSIGNED_BYTE, reinterpret_cast<const char *>(_blob.data()));
+  _id = backend::createTexture(
+    _width, _height, reinterpret_cast<const char *>(_blob.data())
+  );
 }
 } // namespace Old
 } // namespace ImOsm
