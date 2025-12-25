@@ -32,6 +32,21 @@
 #endif
 #endif
 
+#if 1
+//#if defined(_WIN32)
+    const char* modulesDirectory = "./modules";
+    const char* resourcesDirectory = "./res";
+#elif defined(IS_MACOS_BUNDLE)
+    const char* modulesDirectory = "../Plugins";
+    const char* resourcesDirectory = "../Resources";
+#elif defined(__ANDROID__)
+    const char* modulesDirectory = root + "/modules";
+    const char* resourcesDirectory = root + "/res";
+#else
+    const char* modulesDirectory = INSTALL_PREFIX "/lib/sdrpp/plugins";
+    const char* resourcesDirectory = INSTALL_PREFIX "/share/sdrpp";
+#endif
+
 namespace core {
     ConfigManager configManager;
     ModuleManager moduleManager;
@@ -225,20 +240,6 @@ int sdrpp_main(int argc, char* argv[]) {
     defConfig["lockMenuOrder"] = false;
 #endif
 
-#if defined(_WIN32)
-    defConfig["modulesDirectory"] = "./modules";
-    defConfig["resourcesDirectory"] = "./res";
-#elif defined(IS_MACOS_BUNDLE)
-    defConfig["modulesDirectory"] = "../Plugins";
-    defConfig["resourcesDirectory"] = "../Resources";
-#elif defined(__ANDROID__)
-    defConfig["modulesDirectory"] = root + "/modules";
-    defConfig["resourcesDirectory"] = root + "/res";
-#else
-    defConfig["modulesDirectory"] = INSTALL_PREFIX "/lib/sdrpp/plugins";
-    defConfig["resourcesDirectory"] = INSTALL_PREFIX "/share/sdrpp";
-#endif
-
     // Load config
     flog::info("Loading config");
     core::configManager.setPath(root + "/config.json");
@@ -317,7 +318,7 @@ int sdrpp_main(int argc, char* argv[]) {
     if (serverMode) { return server::main(); }
 
     core::configManager.acquire();
-    std::string resDir = core::configManager.conf["resourcesDirectory"];
+    std::string resDir = resourcesDirectory;
     json bandColors = core::configManager.conf["bandColors"];
     core::configManager.release();
 

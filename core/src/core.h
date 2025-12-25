@@ -14,3 +14,6 @@ namespace core {
 };
 
 int sdrpp_main(int argc, char* argv[]);
+
+extern const char* modulesDirectory;
+extern const char* resourcesDirectory;

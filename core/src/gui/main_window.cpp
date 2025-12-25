@@ -37,8 +37,8 @@ void MainWindow::init() {
 
     core::configManager.acquire();
     json menuElements = core::configManager.conf["menuElements"];
-    std::string modulesDir = core::configManager.conf["modulesDirectory"];
-    std::string resourcesDir = core::configManager.conf["resourcesDirectory"];
+    std::string modulesDir = modulesDirectory;
+    std::string resourcesDir = resourcesDirectory;
     core::configManager.release();
 
     // Assert that directories are absolute
