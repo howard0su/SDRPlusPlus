@@ -141,9 +141,7 @@ namespace dsp::filter {
 
                 flog::warn("MultipathFIR: Detected non-finite output sample, resetting filter state.");
                 
-                buffer::clear(stateBuffer, _filterOrder);
-                buffer::clear(coeffBuffer, _filterOrder);
-                coeffBuffer[_refIndex] = complex_t{ 1.0f, 0.0f };
+                resetState();
             }
 
             return output;
