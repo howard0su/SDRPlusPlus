@@ -805,7 +805,7 @@ namespace ImGui {
 
     void WaterFall::updateWaterfallTexture() {
         std::lock_guard<std::mutex> lck(texMtx);
-        backend::updateTexture(textureId, dataWidth, waterfallHeight, (uint8_t*)waterfallFb);
+        backend::updateTexture(textureId, (uint8_t*)waterfallFb);
     }
 
     void WaterFall::onPositionChange() {
@@ -827,6 +827,7 @@ namespace ImGui {
             newFFTAreaHeight = FFTAreaHeight;
             fftHeight = FFTAreaHeight - (50.0f * style::uiScale);
             waterfallHeight = widgetSize.y - fftHeight - (50.0f * style::uiScale) - 2;
+
         }
         else {
             fftHeight = widgetSize.y - (50.0f * style::uiScale);
@@ -876,9 +877,13 @@ namespace ImGui {
         }
 
         if (waterfallVisible) {
+            backend::deleteTexture(textureId);
             delete[] waterfallFb;
+            // recreate the texture
+
             waterfallFb = new uint32_t[dataWidth * waterfallHeight];
             memset(waterfallFb, 0, dataWidth * waterfallHeight * sizeof(uint32_t));
+            textureId = backend::createTexture(dataWidth, waterfallHeight, waterfallFb);
         }
         for (int i = 0; i < dataWidth; i++) {
             latestFFT[i] = -1000.0f; // Hide everything

@@ -35,7 +35,7 @@ namespace ImGui {
 
         if (newData) {
             newData = false;
-            backend::updateTexture(textureId, _frameWidth, _lineCount, frameBuffer);
+            backend::updateTexture(textureId, frameBuffer);
         }
 
         window->DrawList->AddImage((void*)(intptr_t)textureId, min, ImVec2(min.x + width, min.y + height));

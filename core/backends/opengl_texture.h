@@ -17,10 +17,22 @@ namespace backend {
 
         return texId;
     }
-
-    void updateTexture(ImTextureID texId, int width, int height, const void* data)
+    
+    static void getTextureSize(ImTextureID texId, int& width, int& height)
     {
-        glBindTexture(GL_TEXTURE_2D, texId);
+        GLuint id = (GLuint)(uintptr_t)texId;
+        glBindTexture(GL_TEXTURE_2D, id);
+        glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &width);
+        glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &height);
+    }
+
+    void updateTexture(ImTextureID texId, const void* data)
+    {
+        int width;
+        int height;
+        GLuint id = (GLuint)(uintptr_t)texId;
+        getTextureSize(texId, width, height);
+        glBindTexture(GL_TEXTURE_2D, id);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);

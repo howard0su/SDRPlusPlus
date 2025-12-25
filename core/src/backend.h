@@ -12,6 +12,6 @@ namespace backend {
     int end();
 
     ImTextureID createTexture(int width, int height, const void* data);
-    void updateTexture(ImTextureID textureId, int width, int height, const void* data);
+    void updateTexture(ImTextureID textureId, const void* data);
     void deleteTexture(ImTextureID textureId);
 }
