@@ -327,13 +327,13 @@ namespace demod {
             // Generate string depending on RDS mode
             char buf[256];
             if (_this->rdsDecode.PSNameValid() && _this->rdsDecode.radioTextValid()) {
-                sprintf(buf, "RDS: %s - %s", _this->rdsDecode.getPSName().c_str(), _this->rdsDecode.getRadioText().c_str());
+                snprintf(buf, sizeof(buf), "RDS: %s - %s", _this->rdsDecode.getPSName().c_str(), _this->rdsDecode.getRadioText().c_str());
             }
             else if (_this->rdsDecode.PSNameValid()) {
-                sprintf(buf, "RDS: %s", _this->rdsDecode.getPSName().c_str());
+                snprintf(buf, sizeof(buf), "RDS: %s", _this->rdsDecode.getPSName().c_str());
             }
             else if (_this->rdsDecode.radioTextValid()) {
-                sprintf(buf, "RDS: %s", _this->rdsDecode.getRadioText().c_str());
+                snprintf(buf, sizeof(buf), "RDS: %s", _this->rdsDecode.getRadioText().c_str());
             }
             else {
                 return;

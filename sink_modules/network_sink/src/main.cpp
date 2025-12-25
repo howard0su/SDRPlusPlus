@@ -81,7 +81,7 @@ public:
         int _48kId;
         bool found = false;
         for (auto sr : sampleRates) {
-            sprintf(buffer, "%d", (int)sr);
+            snprintf(buffer, sizeof(buffer), "%d", (int)sr);
             sampleRatesTxt += buffer;
             sampleRatesTxt += '\0';
             if (sr == sampleRate) {

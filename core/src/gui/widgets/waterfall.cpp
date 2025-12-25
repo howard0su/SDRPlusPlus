@@ -51,16 +51,16 @@ inline double findBestRange(double bandwidth, int maxSteps) {
 inline void printAndScale(double freq, char* buf) {
     double freqAbs = fabs(freq);
     if (freqAbs < 1000) {
-        sprintf(buf, "%.6g", freq);
+        snprintf(buf, sizeof(buf), "%.6g", freq);
     }
     else if (freqAbs < 1000000) {
-        sprintf(buf, "%.6lgK", freq / 1000.0);
+        snprintf(buf, sizeof(buf), "%.6lgK", freq / 1000.0);
     }
     else if (freqAbs < 1000000000) {
-        sprintf(buf, "%.6lgM", freq / 1000000.0);
+        snprintf(buf, sizeof(buf), "%.6lgM", freq / 1000000.0);
     }
     else if (freqAbs < 1000000000000) {
-        sprintf(buf, "%.6lgG", freq / 1000000000.0);
+        snprintf(buf, sizeof(buf), "%.6lgG", freq / 1000000000.0);
     }
 }
 
@@ -139,7 +139,7 @@ namespace ImGui {
             window->DrawList->AddLine(ImVec2(fftAreaMin.x, roundf(yPos)),
                                       ImVec2(fftAreaMax.x, roundf(yPos)),
                                       IM_COL32(50, 50, 50, 255), style::uiScale);
-            sprintf(buf, "%d", (int)line);
+            snprintf(buf, sizeof(buf), "%d", (int)line);
             ImVec2 txtSz = ImGui::CalcTextSize(buf);
             window->DrawList->AddText(ImVec2(fftAreaMin.x - txtSz.x - textVOffset, roundf(yPos - (txtSz.y / 2.0))), text, buf);
         }

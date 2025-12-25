@@ -26,7 +26,7 @@ namespace hrfreq {
 
         // Convert to string (TODO: Not sure if limiting the decimals rounds)
         char numBuf[128];
-        int numLen = sprintf(numBuf, "%0.*lf", maxDecimals, freq);
+        int numLen = snprintf(numBuf, sizeof(numBuf), "%0.*lf", maxDecimals, freq);
 
         // If there is a decimal point, remove the useless zeros
         if (maxDecimals) {
@@ -40,7 +40,7 @@ namespace hrfreq {
 
         // Concat the suffix
         char finalBuf[128];
-        sprintf(finalBuf, "%s%s", numBuf, suffix);
+        snprintf(finalBuf, sizeof(finalBuf), "%s%s", numBuf, suffix);
 
         // Return the final string
         return finalBuf;

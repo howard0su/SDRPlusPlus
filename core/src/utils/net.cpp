@@ -89,7 +89,7 @@ namespace net {
     std::string Address::getIPStr() const {
         char buf[128];
         IP_t ip = getIP();
-        sprintf(buf, "%d.%d.%d.%d", (ip >> 24) & 0xFF, (ip >> 16) & 0xFF, (ip >> 8) & 0xFF, ip & 0xFF);
+        snprintf(buf, sizeof(buf), "%d.%d.%d.%d", (ip >> 24) & 0xFF, (ip >> 16) & 0xFF, (ip >> 8) & 0xFF, ip & 0xFF);
         return buf;
     }
 

@@ -175,7 +175,7 @@ uint8_t reverse_byte(uint8_t b) {
 
 static uint8_t reverse_table[256];
 
-void create_reverse_table() {
+void create_reverse_table(void) {
     for (uint16_t i = 0; i < 256; i++) {
         reverse_table[i] = reverse_byte(i);
     }

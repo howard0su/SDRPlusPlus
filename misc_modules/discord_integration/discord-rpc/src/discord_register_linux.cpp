@@ -97,6 +97,6 @@ extern "C" DISCORD_EXPORT void Discord_RegisterSteamGame(const char* application
                                                          const char* steamId)
 {
     char command[256];
-    sprintf(command, "xdg-open steam://rungameid/%s", steamId);
+    snprintf(command, sizeof(command), "xdg-open steam://rungameid/%s", steamId);
     Discord_Register(applicationId, command);
 }

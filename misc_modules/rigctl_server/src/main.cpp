@@ -421,7 +421,7 @@ private:
 
             // Respond with the frequency
             char buf[128];
-            sprintf(buf, "%" PRIu64 "\n", (uint64_t)freq);
+            snprintf(buf, sizeof(buf), "%" PRIu64 "\n", (uint64_t)freq);
             client->write(strlen(buf), (uint8_t*)buf);
         }
         else if (parts[0] == "M" || parts[0] == "\\set_mode") {

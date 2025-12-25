@@ -78,7 +78,7 @@ public:
         // Define packet sizes
         for (int i = 8; i <= 32768; i <<= 1) {
             char buf[16];
-            sprintf(buf, "%d Bytes", i);
+            snprintf(buf, sizeof(buf), "%d Bytes", i);
             packetSizes.define(i, buf, i);
         }
 
@@ -262,13 +262,13 @@ private:
     std::string getSrScaled(double sr) {
         char buf[1024];
         if (sr >= 1000000.0) {
-            sprintf(buf, "%.1lf MS/s", sr / 1000000.0);
+            snprintf(buf, sizeof(buf), "%.1lf MS/s", sr / 1000000.0);
         }
         else if (sr >= 1000.0) {
-            sprintf(buf, "%.1lf KS/s", sr / 1000.0);
+            snprintf(buf, sizeof(buf), "%.1lf KS/s", sr / 1000.0);
         }
         else {
-            sprintf(buf, "%.1lf S/s", sr);
+            snprintf(buf, sizeof(buf), "%.1lf S/s", sr);
         }
         return std::string(buf);
     }

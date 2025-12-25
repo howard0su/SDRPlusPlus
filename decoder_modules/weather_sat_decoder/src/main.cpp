@@ -35,7 +35,7 @@ std::string genFileName(std::string prefix, std::string suffix) {
     time_t now = time(0);
     tm* ltm = localtime(&now);
     char buf[1024];
-    sprintf(buf, "%s_%02d-%02d-%02d_%02d-%02d-%02d%s", prefix.c_str(), ltm->tm_hour, ltm->tm_min, ltm->tm_sec, ltm->tm_mday, ltm->tm_mon + 1, ltm->tm_year + 1900, suffix.c_str());
+    snprintf(buf, sizeof(buf), "%s_%02d-%02d-%02d_%02d-%02d-%02d%s", prefix.c_str(), ltm->tm_hour, ltm->tm_min, ltm->tm_sec, ltm->tm_mday, ltm->tm_mon + 1, ltm->tm_year + 1900, suffix.c_str());
     return buf;
 }
 

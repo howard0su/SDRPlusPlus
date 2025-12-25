@@ -58,7 +58,7 @@ public:
         file.seekg(dataOffset);
     }
 
-    void close() {
+    void close() override {
         file.close();
     }
 

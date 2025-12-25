@@ -117,7 +117,7 @@ void FrequencySelect::draw() {
         if (digits[i] != 0) {
             zeros = false;
         }
-        sprintf(buf, "%d", digits[i]);
+        snprintf(buf, sizeof(buf), "%d", digits[i]);
         window->DrawList->AddText(ImVec2(widgetPos.x + (i * digitWidth) + commaOffset, widgetPos.y),
                                   zeros ? disabledColor : textColor, buf);
         if ((i + 1) % 3 == 0 && i < 11) {

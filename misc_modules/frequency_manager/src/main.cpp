@@ -383,7 +383,7 @@ private:
             else {
                 char buf[64];
                 for (int i = 1; i < 1000; i++) {
-                    sprintf(buf, "New List (%d)", i);
+                    snprintf(buf, sizeof(buf), "New List (%d)", i);
                     if (std::find(_this->listNames.begin(), _this->listNames.end(), buf) == _this->listNames.end()) { break; }
                 }
                 _this->editedListName = buf;
@@ -450,7 +450,7 @@ private:
             else {
                 char buf[64];
                 for (int i = 1; i < 1000; i++) {
-                    sprintf(buf, "New Bookmark (%d)", i);
+                    snprintf(buf, sizeof(buf), "New Bookmark (%d)", i);
                     if (_this->bookmarks.find(buf) == _this->bookmarks.end()) { break; }
                 }
                 _this->editedBookmarkName = buf;

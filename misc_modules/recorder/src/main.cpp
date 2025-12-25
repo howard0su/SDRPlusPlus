@@ -472,13 +472,13 @@ private:
         char monStr[128];
         char yearStr[128];
         const char* modeStr = (recMode == RECORDER_MODE_AUDIO) ? "Unknown" : "IQ";
-        sprintf(freqStr, "%.0lfHz", freq);
-        sprintf(hourStr, "%02d", ltm->tm_hour);
-        sprintf(minStr, "%02d", ltm->tm_min);
-        sprintf(secStr, "%02d", ltm->tm_sec);
-        sprintf(dayStr, "%02d", ltm->tm_mday);
-        sprintf(monStr, "%02d", ltm->tm_mon + 1);
-        sprintf(yearStr, "%02d", ltm->tm_year + 1900);
+        snprintf(freqStr, sizeof(freqStr), "%.0lfHz", freq);
+        snprintf(hourStr, sizeof(hourStr), "%02d", ltm->tm_hour);
+        snprintf(minStr, sizeof(minStr), "%02d", ltm->tm_min);
+        snprintf(secStr, sizeof(secStr), "%02d", ltm->tm_sec);
+        snprintf(dayStr, sizeof(dayStr), "%02d", ltm->tm_mday);
+        snprintf(monStr, sizeof(monStr), "%02d", ltm->tm_mon + 1);
+        snprintf(yearStr, sizeof(yearStr), "%02d", ltm->tm_year + 1900);
         if (core::modComManager.getModuleName(name) == "radio") {
             int mode = -1;
             core::modComManager.callInterface(name, RADIO_IFACE_CMD_GET_MODE, NULL, &mode);

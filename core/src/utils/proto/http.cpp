@@ -200,7 +200,7 @@ namespace net::http {
 
     std::string ResponseHeader::serializeStartLine() {
         char buf[1024];
-        sprintf(buf, "%d %s", (int)statusCode, statusString.c_str());
+        snprintf(buf, sizeof(buf), "%d %s", (int)statusCode, statusString.c_str());
         return buf;
     }
 
@@ -214,7 +214,7 @@ namespace net::http {
 
     std::string ChunkHeader::serialize() {
         char buf[64];
-        sprintf(buf, "%" PRIX64 "\r\n", length);
+        snprintf(buf, sizeof(buf), "%" PRIX64 "\r\n", (uint64_t)length);
         return buf;
     }
 

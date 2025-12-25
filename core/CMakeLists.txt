@@ -11,6 +11,8 @@ if (USE_BUNDLE_DEFAULTS)
 add_definitions(-DIS_MACOS_BUNDLE)
 endif (USE_BUNDLE_DEFAULTS)
 
+add_definitions(-DGL_SILENCE_DEPRECATION)
+
 # Main code
 file(GLOB_RECURSE SRC "src/*.cpp" "src/*.c")
 

@@ -217,7 +217,7 @@ int osd_decode(const float codeword[FTX_LDPC_N], int depth, uint8_t out[FTX_LDPC
         which[i] = i;
 
 #ifdef __APPLE__
-    qsort_r(which, FTX_LDPC_N, sizeof(uint8_t), codeword, osd_cmp);
+    qsort_r(which, FTX_LDPC_N, sizeof(uint8_t), (void*)codeword, osd_cmp);
 #else
 #if defined(_MSC_VER)
     qsort_s(which, FTX_LDPC_N, sizeof(uint8_t), osd_cmp, codeword);

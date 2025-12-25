@@ -5,7 +5,7 @@
 // This is needed because not all process functions have the same arguments
 
 #define OVERRIDE_PROC_RUN(exp)\
-    int run() {\
+    int run() override{\
         int count = _in->read();\
         if (count < 0) {\
             return -1;\
@@ -19,7 +19,7 @@
     }
 
 #define OVERRIDE_MULTIRATE_PROC_RUN(exp)\
-    int run() {\
+    int run() override {\
         int count = _in->read();\
         if (count < 0) {\
             return -1;\

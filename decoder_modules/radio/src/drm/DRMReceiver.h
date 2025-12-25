@@ -274,7 +274,7 @@ public:
     /* DSP Processor Implementation*/
     int                     process(int count, const dsp::complex_t* in, dsp::stereo_t* out);
 
-    void init(dsp::stream<dsp::complex_t>* in) {
+    void init(dsp::stream<dsp::complex_t>* in) override {
         iPhase = 0;
         InitReceiverMode();
         InputResample.SetSyncInput(false);

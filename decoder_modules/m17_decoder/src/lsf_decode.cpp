@@ -82,7 +82,7 @@ M17LSF M17DecodeLSF(uint8_t* _lsf) {
     }
     else {
         char buf[128];
-        sprintf(buf, "%" PRIX64, lsf.rawDst);
+        snprintf(buf, sizeof(buf), "%" PRIX64, lsf.rawDst);
         lsf.dst = buf;
     }
 
@@ -97,7 +97,7 @@ M17LSF M17DecodeLSF(uint8_t* _lsf) {
     }
     else {
         char buf[128];
-        sprintf(buf, "%" PRIX64, lsf.rawSrc);
+        snprintf(buf, sizeof(buf), "%" PRIX64, lsf.rawSrc);
         lsf.src = buf;
     }
 
