@@ -883,7 +883,7 @@ namespace ImGui {
 
             waterfallFb = new uint32_t[dataWidth * waterfallHeight];
             memset(waterfallFb, 0, dataWidth * waterfallHeight * sizeof(uint32_t));
-            textureId = backend::createTexture(dataWidth, waterfallHeight, waterfallFb);
+            textureId = backend::createTexture(dataWidth, waterfallHeight, nullptr);
         }
         for (int i = 0; i < dataWidth; i++) {
             latestFFT[i] = -1000.0f; // Hide everything
