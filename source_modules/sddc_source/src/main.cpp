@@ -267,12 +267,12 @@ private:
     static void menuSelected(void* ctx) {
         SDDCSourceModule* _this = (SDDCSourceModule*)ctx;
         core::setInputSampleRate(_this->sampleRate);
-        flog::info("SDDCSourceModule '{0}': Menu Select!", _this->name);
+        flog::debug("SDDCSourceModule '{0}': Menu Select!", _this->name);
     }
 
     static void menuDeselected(void* ctx) {
         SDDCSourceModule* _this = (SDDCSourceModule*)ctx;
-        flog::info("SDDCSourceModule '{0}': Menu Deselect!", _this->name);
+        flog::debug("SDDCSourceModule '{0}': Menu Deselect!", _this->name);
     }
 
     static void start(void* ctx) {
@@ -386,7 +386,7 @@ private:
             }
         }
         _this->freq = freq;
-        flog::info("SDDCSourceModule '{0}': Tune: {1}!", _this->name, freq);
+        flog::debug("SDDCSourceModule '{0}': Tune: {1}!", _this->name, freq);
     }
 
     static void menuHandler(void* ctx) {
