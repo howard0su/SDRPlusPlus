@@ -334,13 +334,6 @@ namespace ImGui {
                 break;
             }
 
-            // Next, check if a VFO was selected
-            if (!targetFound && hoveredVFOName != "") {
-                selectedVFO = hoveredVFOName;
-                selectedVFOChanged = true;
-                targetFound = true;
-                return;
-            }
 
             // Now, check frequency scale
             if (!targetFound && mouseInFreq) {
@@ -534,51 +527,6 @@ namespace ImGui {
             }
         }
 
-        // Handle Page Up to cycle through VFOs
-        if (ImGui::IsKeyPressed(ImGuiKey_PageUp) && selVfo != NULL) {
-            std::string next = (--vfos.end())->first;
-            std::string lowest = "";
-            double lowestOffset = INFINITY;
-            double firstVfoOffset = selVfo->generalOffset;
-            double smallestDistance = INFINITY;
-            bool found = false;
-            for (auto& [_name, _vfo] : vfos) {
-                if (_vfo->generalOffset > firstVfoOffset && (_vfo->generalOffset - firstVfoOffset) < smallestDistance) {
-                    next = _name;
-                    smallestDistance = (_vfo->generalOffset - firstVfoOffset);
-                    found = true;
-                }
-                if (_vfo->generalOffset < lowestOffset) {
-                    lowestOffset = _vfo->generalOffset;
-                    lowest = _name;
-                }
-            }
-            selectedVFO = found ? next : lowest;
-            selectedVFOChanged = true;
-        }
-
-        // Handle Page Down to cycle through VFOs
-        if (ImGui::IsKeyPressed(ImGuiKey_PageDown) && selVfo != NULL) {
-            std::string next = (--vfos.end())->first;
-            std::string highest = "";
-            double highestOffset = -INFINITY;
-            double firstVfoOffset = selVfo->generalOffset;
-            double smallestDistance = INFINITY;
-            bool found = false;
-            for (auto& [_name, _vfo] : vfos) {
-                if (_vfo->generalOffset < firstVfoOffset && (firstVfoOffset - _vfo->generalOffset) < smallestDistance) {
-                    next = _name;
-                    smallestDistance = (firstVfoOffset - _vfo->generalOffset);
-                    found = true;
-                }
-                if (_vfo->generalOffset > highestOffset) {
-                    highestOffset = _vfo->generalOffset;
-                    highest = _name;
-                }
-            }
-            selectedVFO = found ? next : highest;
-            selectedVFOChanged = true;
-        }
     }
 
     bool WaterFall::calculateVFOSignalInfo(float* fftLine, WaterfallVFO* _vfo, float& strength, float& snr) {
