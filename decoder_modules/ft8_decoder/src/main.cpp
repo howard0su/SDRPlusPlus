@@ -16,6 +16,8 @@
 #include "monitor.h"
 #include "ft8/message.h"
 
+#include "imosm_rich.h"
+
 #include "utils/flog.h"
 
 #include <chrono>
@@ -43,16 +45,15 @@ const int kTime_osr = 4;
 
 // Callsign hash table entry
 struct CallsignHashEntry {
-    char callsign[12];    // Up to 11 symbols + null terminator
-    uint32_t hash;        // 8 MSBs: age, 22 LSBs: hash value
+    char callsign[12]; // Up to 11 symbols + null terminator
+    uint32_t hash;     // 8 MSBs: age, 22 LSBs: hash value
 };
 
 // Global callsign hash map used by the FT8 message code via the C interface.
 static std::mutex g_callsign_mutex;
 static std::unordered_map<uint32_t, std::pair<std::string, uint8_t>> g_callsign_map; // n22 -> (callsign, age)
 
-static bool callsign_lookup_impl(ftx_callsign_hash_type_t hash_type, uint32_t hash, char* callsign_out)
-{
+static bool callsign_lookup_impl(ftx_callsign_hash_type_t hash_type, uint32_t hash, char* callsign_out) {
     std::lock_guard<std::mutex> lk(g_callsign_mutex);
 
     if (hash_type == FTX_CALLSIGN_HASH_22_BITS) {
@@ -65,7 +66,7 @@ static bool callsign_lookup_impl(ftx_callsign_hash_type_t hash_type, uint32_t ha
     }
 
     // For 12- and 10-bit hashes, search for a matching prefix
-    for (const auto &kv : g_callsign_map) {
+    for (const auto& kv : g_callsign_map) {
         uint32_t n22 = kv.first;
         if (hash_type == FTX_CALLSIGN_HASH_12_BITS) {
             if ((n22 >> 10) == hash) {
@@ -73,7 +74,8 @@ static bool callsign_lookup_impl(ftx_callsign_hash_type_t hash_type, uint32_t ha
                 callsign_out[11] = '\0';
                 return true;
             }
-        } else { // 10 bits
+        }
+        else { // 10 bits
             if ((n22 >> 12) == hash) {
                 strncpy(callsign_out, kv.second.first.c_str(), 11);
                 callsign_out[11] = '\0';
@@ -85,8 +87,7 @@ static bool callsign_lookup_impl(ftx_callsign_hash_type_t hash_type, uint32_t ha
     return false;
 }
 
-static void callsign_save_impl(const char* callsign, uint32_t n22)
-{
+static void callsign_save_impl(const char* callsign, uint32_t n22) {
     std::lock_guard<std::mutex> lk(g_callsign_mutex);
 
     std::string s = callsign;
@@ -94,7 +95,8 @@ static void callsign_save_impl(const char* callsign, uint32_t n22)
     auto it = g_callsign_map.find(n22);
     if (it == g_callsign_map.end()) {
         g_callsign_map.emplace(n22, std::make_pair(s, (uint8_t)0));
-    } else {
+    }
+    else {
         it->second.first = s;
         it->second.second = 0; // reset age
     }
@@ -125,6 +127,9 @@ public:
         monitor_init(&monitor, &mon_cfg);
         // Ensure sample buffer is empty at start
         sampleBuffer.clear();
+
+        _mapPlot.setBoundsGeo(ImOsm::MIN_LAT, ImOsm::MAX_LAT, ImOsm::MIN_LON,
+                              ImOsm::MAX_LON);
 
         gui::menu.registerEntry(name, menuHandler, this, this);
     }
@@ -168,10 +173,29 @@ private:
 
         ImGui::Text("FT8 Decoder");
         ImGui::Text("Status: %s", _this->state == WAIT_FOR_START ? "Waiting for slot" : "Collecting symbols");
-        ImGui::Text("Decoded Messages: %d", (int)_this->decodedMessages.size());
 
         if (!_this->enabled) {
             style::endDisabled();
+        }
+
+        if (_this->_markItems.size() > 0) {
+            double minLat = ImOsm::MAX_LAT, maxLat = ImOsm::MIN_LAT, minLon = ImOsm::MAX_LON, maxLon = ImOsm::MIN_LON;
+
+            // caculate max min/max lat/lon from mark items
+            for (auto item : _this->_markItems) {
+                ImOsm::GeoCoords coords = item.second->geoCoords();
+                if (coords.lat < minLat) minLat = coords.lat;
+                if (coords.lat > maxLat) maxLat = coords.lat;
+                if (coords.lon < minLon) minLon = coords.lon;
+                if (coords.lon > maxLon) maxLon = coords.lon;
+            }
+
+            _this->_mapPlot.setBoundsGeo(minLat, maxLat, minLon, maxLon);
+
+            {
+                std::lock_guard<std::mutex> lk(_this->_mapMutex);
+                _this->_mapPlot.paint();
+            }
         }
     }
 
@@ -215,9 +239,11 @@ private:
                             this->decodeSlot();
                             this->state = WAIT_FOR_START;
                             this->sampleBuffer.clear();
-                        } catch (const std::exception &e) {
+                        }
+                        catch (const std::exception& e) {
                             flog::error("FT8DecoderModule decode thread exception: {}", e.what());
-                        } catch (...) {
+                        }
+                        catch (...) {
                             flog::error("FT8DecoderModule decode thread unknown exception");
                         }
                     });
@@ -235,7 +261,7 @@ private:
 
     void decodeSlot() {
         const ftx_waterfall_t* wf = &monitor.wf;
-        
+
         // Candidate list
         ftx_candidate_t candidate_list[kMax_candidates];
 
@@ -254,7 +280,7 @@ private:
 
                 ftx_message_t message;
                 ftx_decode_status_t status;
-                
+
                 if (!ftx_decode_candidate(wf, cand, kLDPC_iterations, &message, &status)) {
                     // Decoding failed
                     continue;
@@ -277,16 +303,35 @@ private:
 
                 // Store the message
                 message_map[msg_hash] = message;
-                decodedMessages[msg_hash] = message;
+                {
+                    // decode std message to append callsign and grid for map plotting
+                    char call_to[12] = { 0 };
+                    char call_de[12] = { 0 };
+                    char grid[12] = { 0 };
+                    ftx_message_rc_t std_status = ftx_message_decode_std(&message, getCallsignHashInterface(), call_to, call_de, grid);
+                    if (std_status != FTX_MESSAGE_RC_OK || _markItems.find(call_de) != _markItems.end()) {
+                        continue;
+                    }
 
-                // Log the decoded message
-                auto now = std::chrono::system_clock::now();
-                auto time_t_now = std::chrono::system_clock::to_time_t(now);
-                struct tm* tm_now = gmtime(&time_t_now);
+                    std::string grid_str = std::string(grid);
+                    if (grid_str.find('+') == std::string::npos && grid_str.find('-') == std::string::npos) {
+                        double lat, lon;
 
-                flog::info("[FT8] {:02d}{:02d}{:02d} {:+05.1f} {:+4.2f} {:4.0f} ~ {}",
-                    tm_now->tm_hour, tm_now->tm_min, tm_now->tm_sec,
-                    message.snr / 2.0f - 22.0f, time_sec, freq_hz, text);
+                        flog::debug("FT8DecoderModule: Parsing grid with offset: {}", grid_str);
+                        if (grid[0] == 'R' && grid[1] == ' ') {
+                            grid_str = grid_str.substr(2);
+                        }
+
+                        if (maidenhead_to_latlon(grid_str.data(), &lat, &lon) == 0) {
+                            std::lock_guard<std::mutex> lk(_mapMutex);
+                            auto item = std::make_shared<ImOsm::Rich::MarkItem>(ImOsm::GeoCoords(lat, lon), call_de);
+                            item->style().markerSize = 2.0f;
+                            _markItems[call_de] = item;
+                            _mapPlot.addItem(item);
+                            flog::info("FT8DecoderModule: Plotted callsign {} at grid {} (lat {:.4f}, lon {:.4f})", call_de, grid_str, lat, lon);
+                        }
+                    }
+                }
             }
         }
 
@@ -301,6 +346,67 @@ private:
         return &callsign_if;
     }
 
+    /*
+     * Convert Maidenhead Grid Locator (4 or 6 chars) to latitude/longitude
+     * lat, lon returned in degrees
+     * Center of grid square is returned
+     *
+     * Returns 0 on success, -1 on invalid input
+     */
+    static int maidenhead_to_latlon(const char* grid, double* lat, double* lon) {
+        if (!grid || !lat || !lon)
+            return -1;
+
+        int len = strlen(grid);
+        if (len != 4 && len != 6)
+            return -1;
+
+        char g[7] = { 0 };
+        for (int i = 0; i < len; i++)
+            g[i] = tolower((unsigned char)grid[i]);
+
+        /* Validate basic ranges */
+        if (g[0] < 'a' || g[0] > 'r') return -1;
+        if (g[1] < 'a' || g[1] > 'r') return -1;
+        if (g[2] < '0' || g[2] > '9') return -1;
+        if (g[3] < '0' || g[3] > '9') return -1;
+        if (len == 6) {
+            if (g[4] < 'a' || g[4] > 'x') return -1;
+            if (g[5] < 'a' || g[5] > 'x') return -1;
+        }
+
+        /* Start from southwest corner */
+        double longitude = -180.0;
+        double latitude = -90.0;
+
+        /* Field */
+        longitude += (g[0] - 'a') * 20.0;
+        latitude += (g[1] - 'a') * 10.0;
+
+        /* Square */
+        longitude += (g[2] - '0') * 2.0;
+        latitude += (g[3] - '0') * 1.0;
+
+        if (len == 6) {
+            /* Subsquare */
+            longitude += (g[4] - 'a') * (5.0 / 60.0);
+            latitude += (g[5] - 'a') * (2.5 / 60.0);
+
+            /* Center of subsquare */
+            longitude += (5.0 / 60.0) / 2.0;
+            latitude += (2.5 / 60.0) / 2.0;
+        }
+        else {
+            /* Center of square */
+            longitude += 1.0;
+            latitude += 0.5;
+        }
+
+        *lat = latitude;
+        *lon = longitude;
+        return 0;
+    }
+
     void cleanupCallsignHashTable(uint8_t max_age) {
         std::lock_guard<std::mutex> lk(g_callsign_mutex);
 
@@ -309,7 +415,8 @@ private:
             it->second.second++;
             if (it->second.second > max_age) {
                 it = g_callsign_map.erase(it);
-            } else {
+            }
+            else {
                 ++it;
             }
         }
@@ -334,8 +441,11 @@ private:
     // Message storage using hash for deduplication
     // Buffer for incoming samples when count < monitor.block_size
     std::vector<dsp::complex_t> sampleBuffer;
-    std::unordered_map<uint32_t, ftx_message_t> decodedMessages;
     std::unordered_map<std::string, CallsignHashEntry> callsignHashTable;
+    ImOsm::Rich::RichMapPlot _mapPlot;
+
+    std::mutex _mapMutex;
+    std::unordered_map<std::string, std::shared_ptr<ImOsm::Rich::MarkItem>> _markItems;
 };
 
 MOD_EXPORT void _INIT_() {}
