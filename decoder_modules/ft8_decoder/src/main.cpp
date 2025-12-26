@@ -131,13 +131,13 @@ public:
         _mapPlot.setBoundsGeo(ImOsm::MIN_LAT, ImOsm::MAX_LAT, ImOsm::MIN_LON,
                               ImOsm::MAX_LON);
 
-        gui::menu.registerEntry(name, menuHandler, this, this);
+        core::decoderManager.registerDecoder(name, menuHandler, this);
     }
 
     ~FT8DecoderModule() {
         disable();
         monitor_free(&monitor);
-        gui::menu.removeEntry(name);
+        core::decoderManager.removeDecoder(name);
     }
 
     void postInit() {}

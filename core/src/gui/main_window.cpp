@@ -542,9 +542,27 @@ void MainWindow::draw() {
     ImGui::NextColumn();
     ImGui::PopStyleVar();
 
-    ImGui::BeginChild("Waterfall");
+    // Split right column into two parts: waterfall (top) and decoders (bottom)
+    float decoderPanelHeight = 200.0f * style::uiScale; // Fixed height for decoder panel
 
-    gui::waterfall.draw();
+    // Waterfall panel (top)
+    ImGui::BeginChild("WaterfallPanel", ImVec2(0, -decoderPanelHeight));
+    {
+        gui::waterfall.draw();
+    }
+    ImGui::EndChild();
+
+    // Decoder panel (bottom) with tabs
+    ImGui::BeginChild("DecoderPanel", ImVec2(0, decoderPanelHeight));
+    {
+        core::decoderManager.drawInterface();
+
+        // Draw content for active decoder
+        float contentHeight = decoderPanelHeight - ImGui::GetFrameHeightWithSpacing() - (10 * style::uiScale);
+        ImGui::BeginChild("DecoderContent", ImVec2(0, contentHeight));
+        core::decoderManager.drawActiveDecoder();
+    }
+    ImGui::EndChild();
 
     ImGui::EndChild();
 
