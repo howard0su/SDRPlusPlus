@@ -29,7 +29,7 @@ struct MapPlot::Impl {
 
 MapPlot::MapPlot()
     : _impl{std::make_unique<Impl>()},
-      _loader{std::make_shared<TileLoaderOsmMap>()} {}
+      _loader{std::make_shared<TileLoaderArcMap>()} {}
 
 MapPlot::MapPlot(std::shared_ptr<ITileLoader> &loader)
     : _impl{std::make_unique<Impl>()}, _loader{loader}, _minLat{MIN_LAT},
