@@ -245,6 +245,9 @@ private:
         if (config.conf["devices"][selectedSerial].contains("bias")) {
             bias = config.conf["devices"][selectedSerial]["bias"];
         }
+        if (config.conf["devices"][selectedSerial].contains("pga")) {
+            pga = config.conf["devices"][selectedSerial]["pga"];
+        }
         config.release();
 
         sddc_close(dev);
@@ -321,6 +324,7 @@ private:
             ddc.start();
         }
 
+        sddc_enable_adc_pga(openDev, pga ? 1 : 0);
         sddc_set_xtal_freq(openDev, xtal_freq);
         
         float min, max;
@@ -449,6 +453,18 @@ private:
             }
         }
 
+        SmGui::SameLine();
+        if (SmGui::Checkbox(CONCAT("PGA##_sddc_pga_", _this->name), &_this->pga)) {
+            if (_this->running) {
+                sddc_enable_adc_pga(_this->openDev, _this->pga ? 1 : 0);                
+            }
+            if (!_this->selectedSerial.empty()) {
+                config.acquire();
+                config.conf["devices"][_this->selectedSerial]["pga"] = _this->pga;
+                config.release(true);
+            }
+        }
+
         SmGui::LeftLabel("RF Gain");
         SmGui::FillWidth();
         if (SmGui::SliderInt(CONCAT("##_sddc_rf_gain_", _this->name), &_this->rfGain, _this->rf_gain_min, _this->rf_gain_max)) {
@@ -512,6 +528,8 @@ private:
     int rfGain = 0;
     int ifGain = 0;
     std::string selectedSerial;
+
+    bool pga;
 
     sddc_dev_t* openDev;
 

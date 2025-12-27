@@ -62,7 +62,8 @@ namespace dsp::channel {
         void setGainFactor(float gain) {
             std::lock_guard<std::recursive_mutex> lck(base_type::ctrlMtx);
             if (GainScale != gain) {
-                generateFreqFilter(gain, _decimationIndex);
+                GainScale = gain;
+                generateFreqFilter(GainScale, _decimationIndex);
             }
         }
 
@@ -341,7 +342,7 @@ namespace dsp::channel {
                 // Bw *= 0.8f;  // easily visualize Kaiser filter's response
                 KaiserWindow(halfFft / 4 + 1, Astop, relPass * Bw / 128.0f, relStop * Bw / 128.0f, pht);
 
-                float gainadj = gain * 2048.0f / (float)(halfFft * 2); // reference is FFTN_R_ADC == 2048
+                float gainadj = gain * 4096.0f / (float)(halfFft * 2); // reference is FFTN_R_ADC == 4096
 
                 for (int t = 0; t < halfFft; t++) {
                     pfilterht[t][0] = pfilterht[t][1] = 0.0F;
