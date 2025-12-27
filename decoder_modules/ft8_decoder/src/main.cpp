@@ -178,24 +178,16 @@ private:
             style::endDisabled();
         }
 
-        if (_this->_markItems.size() > 0) {
-            double minLat = ImOsm::MAX_LAT, maxLat = ImOsm::MIN_LAT, minLon = ImOsm::MAX_LON, maxLon = ImOsm::MIN_LON;
-
-            // caculate max min/max lat/lon from mark items
-            for (auto item : _this->_markItems) {
-                ImOsm::GeoCoords coords = item.second->geoCoords();
-                if (coords.lat < minLat) minLat = coords.lat;
-                if (coords.lat > maxLat) maxLat = coords.lat;
-                if (coords.lon < minLon) minLon = coords.lon;
-                if (coords.lon > maxLon) maxLon = coords.lon;
-            }
-
-            _this->_mapPlot.setBoundsGeo(minLat, maxLat, minLon, maxLon);
-
+        if (_this->_markItems.size() > 0)
+        {
             {
                 std::lock_guard<std::mutex> lk(_this->_mapMutex);
                 _this->_mapPlot.paint();
+                // handle hover/click interactions (must be done while plot mouse state is valid)
+                _this->handleMapInteraction();
             }
+
+
         }
     }
 
@@ -446,6 +438,46 @@ private:
 
     std::mutex _mapMutex;
     std::unordered_map<std::string, std::shared_ptr<ImOsm::Rich::MarkItem>> _markItems;
+
+    // Interaction state (mouse zooming)
+    // mouse-wheel zoom is handled in handleMapInteraction()
+
+    void handleMapInteraction() {
+            // zoom handling via mouse wheel (centered on mouse position)
+        if (!_mapPlot.mouseOnPlot()) return;
+
+        const double mouseLat = _mapPlot.mouseLat();
+        const double mouseLon = _mapPlot.mouseLon();
+
+        ImGuiIO &io = ImGui::GetIO();
+        const float wheel = io.MouseWheel; // positive -> up (zoom in)
+        if (wheel == 0.f) return;
+
+        float minLat{}, maxLat{}, minLon{}, maxLon{};
+        _mapPlot.getBoundsGeo(minLat, maxLat, minLon, maxLon);
+
+        const double latSpan = maxLat - minLat;
+        const double lonSpan = maxLon - minLon;
+
+        const double zoomBase = 1.2; // scale step
+        const double scale = pow(zoomBase, -wheel);
+
+        const double newLatHalf = (latSpan / 2.0) * scale;
+        const double newLonHalf = (lonSpan / 2.0) * scale;
+
+        double newMinLat = mouseLat - newLatHalf;
+        double newMaxLat = mouseLat + newLatHalf;
+        double newMinLon = mouseLon - newLonHalf;
+        double newMaxLon = mouseLon + newLonHalf;
+
+        // clamp to valid ranges
+        newMinLat = std::clamp(newMinLat, (double)ImOsm::MIN_LAT, (double)ImOsm::MAX_LAT);
+        newMaxLat = std::clamp(newMaxLat, (double)ImOsm::MIN_LAT, (double)ImOsm::MAX_LAT);
+        newMinLon = std::clamp(newMinLon, (double)ImOsm::MIN_LON, (double)ImOsm::MAX_LON);
+        newMaxLon = std::clamp(newMaxLon, (double)ImOsm::MIN_LON, (double)ImOsm::MAX_LON);
+
+        _mapPlot.setBoundsGeo((float)newMinLat, (float)newMaxLat, (float)newMinLon, (float)newMaxLon);
+    }
 };
 
 MOD_EXPORT void _INIT_() {}
