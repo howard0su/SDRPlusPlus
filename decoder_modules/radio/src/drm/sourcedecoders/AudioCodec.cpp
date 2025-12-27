@@ -99,18 +99,6 @@ CAudioCodec::GetDecoder(CAudioParam::EAudCod eAudioCoding, bool bCanReturnNullPt
     return bCanReturnNullPtr ? nullptr : CodecList[0]; // ie the null codec
 }
 
-CAudioCodec*
-CAudioCodec::GetEncoder(CAudioParam::EAudCod eAudioCoding, bool bCanReturnNullPtr)
-{
-	const int size = CodecList.size();
-
-	for (int i = 1; i < size; i++)
-		if (CodecList[i]->CanEncode(eAudioCoding))
-			return CodecList[i];
-	/* Fallback to null codec */
-    return bCanReturnNullPtr ? nullptr : CodecList[0]; // ie the null codec
-}
-
 void
 CAudioCodec::Init(const CAudioParam&, int)
 {

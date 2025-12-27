@@ -37,7 +37,6 @@
 #include "FAC/FAC.h"
 #include "SDC/SDC.h"
 #include "TextMessage.h"
-#include "util/AudioFile.h"
 #include "util/Utilities.h"
 
 /* Definitions ****************************************************************/

@@ -37,27 +37,6 @@ _REAL CViterbiDecoder::Decode(CVector<CDistance>& vecNewDistance,
     _VITMETRTYPE*	pCurTrelMetric;
     _VITMETRTYPE*	pOldTrelMetric;
 
-    #ifdef USE_SIMD
-        /* -------------------------------------------------------------------------
-           Since the metric is 8-bit fixed-point type, we need to scale the input
-           metrics to avoid overflows */
-        /* Calculate average value of input metrics */
-        _REAL rAverage = (_REAL) 0.0;
-        for (i = 0; i < iNumOutBitsWithMemory; i++)
-        {
-            rAverage += vecNewDistance[i].rTow0;
-            rAverage += vecNewDistance[i].rTow1;
-        }
-    
-        /* Scale input metrics */
-        const _REAL rAmp = rAverage / (2 * iNumOutBitsWithMemory) / 10;
-        for (i = 0; i < iNumOutBitsWithMemory; i++)
-        {
-            vecNewDistance[i].rTow0 /= rAmp;
-            vecNewDistance[i].rTow1 /= rAmp;
-        }
-    #endif
-
     /* Init pointers for old and new trellis state */
     pCurTrelMetric = vecTrelMetric1;
     pOldTrelMetric = vecTrelMetric2;
@@ -196,51 +175,41 @@ _REAL CViterbiDecoder::Decode(CVector<CDistance>& vecNewDistance,
 
 
         /* Update trellis --------------------------------------------------- */
-        #ifdef USE_SIMD
-            /* Use the butterfly unroll for reordering the metrics for SIMD trellis */
-            #define BUTTERFLY(cur, next, prev0, prev1, met0, met1) { \
-                /* At this point we convert from float to char! No overflow-check is done here */ \
-                chMet1[prev0] = (_VITMETRTYPE) METRICSET(i)[met0]; \
-                chMet2[prev0] = (_VITMETRTYPE) METRICSET(i)[met1]; \
-            }
-        #else
-            /* c++ version of trellis update */
-            #define BUTTERFLY(cur, next, prev0, prev1, met0, met1) { \
-                /* First state in this set ------------------------------------ */ \
-                /* Calculate metrics from the two previous states, use the old
-                metric from the previous states plus the "transition-metric" */ \
-                \
-                const _VITMETRTYPE rFiStAccMetricPrev0 = pOldTrelMetric[prev0] + METRICSET(i)[met0]; \
-                const _VITMETRTYPE  rFiStAccMetricPrev1 = pOldTrelMetric[prev1] + METRICSET(i)[met1]; \
-                \
-                /* Take path with smallest metric */ \
-                if (rFiStAccMetricPrev0 < rFiStAccMetricPrev1) { \
-                    /* Save minimum metric for this state and store decision */ \
-                    pCurTrelMetric[cur] = rFiStAccMetricPrev0; \
-                    matdecDecisions[i][cur] = 0; \
-                } else { \
-                    /* Save minimum metric for this state and store decision */ \
-                    pCurTrelMetric[cur] = rFiStAccMetricPrev1; \
-                    matdecDecisions[i][cur] = 1; \
-                } \
-                \
-                /* Second state in this set ----------------------------------- */ \
-                /* The only difference is that we swapped the matric sets */ \
-                const _VITMETRTYPE rSecStAccMetricPrev0 = pOldTrelMetric[prev0] + METRICSET(i)[met1]; \
-                const _VITMETRTYPE  rSecStAccMetricPrev1 = pOldTrelMetric[prev1] + METRICSET(i)[met0]; \
-                \
-                /* Take path with smallest metric */ \
-                if (rSecStAccMetricPrev0 < rSecStAccMetricPrev1) { \
-                    /* Save minimum metric for this state and store decision */ \
-                    pCurTrelMetric[next] = rSecStAccMetricPrev0; \
-                    matdecDecisions[i][next] = 0; \
-                } else { \
-                    /* Save minimum metric for this state and store decision */ \
-                    pCurTrelMetric[next] = rSecStAccMetricPrev1; \
-                    matdecDecisions[i][next] = 1; \
-                } \
-            }
-        #endif
+        #define BUTTERFLY(cur, next, prev0, prev1, met0, met1) { \
+            /* First state in this set ------------------------------------ */ \
+            /* Calculate metrics from the two previous states, use the old */ \
+            /* metric from the previous states plus the "transition-metric" */ \
+            \
+            const _VITMETRTYPE rFiStAccMetricPrev0 = pOldTrelMetric[prev0] + METRICSET(i)[met0]; \
+            const _VITMETRTYPE  rFiStAccMetricPrev1 = pOldTrelMetric[prev1] + METRICSET(i)[met1]; \
+            \
+            /* Take path with smallest metric */ \
+            if (rFiStAccMetricPrev0 < rFiStAccMetricPrev1) { \
+                /* Save minimum metric for this state and store decision */ \
+                pCurTrelMetric[cur] = rFiStAccMetricPrev0; \
+                matdecDecisions[i][cur] = 0; \
+            } else { \
+                /* Save minimum metric for this state and store decision */ \
+                pCurTrelMetric[cur] = rFiStAccMetricPrev1; \
+                matdecDecisions[i][cur] = 1; \
+            } \
+            \
+            /* Second state in this set ----------------------------------- */ \
+            /* The only difference is that we swapped the matric sets */ \
+            const _VITMETRTYPE rSecStAccMetricPrev0 = pOldTrelMetric[prev0] + METRICSET(i)[met1]; \
+            const _VITMETRTYPE  rSecStAccMetricPrev1 = pOldTrelMetric[prev1] + METRICSET(i)[met0]; \
+            \
+            /* Take path with smallest metric */ \
+            if (rSecStAccMetricPrev0 < rSecStAccMetricPrev1) { \
+                /* Save minimum metric for this state and store decision */ \
+                pCurTrelMetric[next] = rSecStAccMetricPrev0; \
+                matdecDecisions[i][next] = 0; \
+            } else { \
+                /* Save minimum metric for this state and store decision */ \
+                pCurTrelMetric[next] = rSecStAccMetricPrev1; \
+                matdecDecisions[i][next] = 1; \
+            } \
+        }
 
         /* Unroll butterflys to avoid loop overhead. For c++ version, the
             actual calculation of the trellis update is done here, for MMX
@@ -279,17 +248,6 @@ _REAL CViterbiDecoder::Decode(CVector<CDistance>& vecNewDistance,
         BUTTERFLY(62, 63, 31, 63, 11,  4)
 
         #undef BUTTERFLY
-
-        #ifdef USE_SIMD
-            /* Do actual trellis update in separate file (assembler implementation) */
-            #ifdef USE_MMX
-                TrellisUpdateMMX
-            #endif
-            #ifdef USE_SSE2
-                TrellisUpdateSSE2
-            #endif
-                (&matdecDecisions[i][0], pCurTrelMetric, pOldTrelMetric, chMet1, chMet2);
-        #endif
 
         #ifdef USE_MAX_LOG_MAP
             /* Store accumulated metrics for backward Viterbi */
@@ -454,13 +412,8 @@ _REAL CViterbiDecoder::Decode(CVector<CDistance>& vecNewDistance,
         }
     #endif
 
-    #ifdef USE_SIMD
-        /* No accumulated metric available because of normalizing the metric because of fixed-point implementation */
-        return (_REAL) 1.0;
-    #else
-        /* Return normalized accumulated minimum metric */
-        return pOldTrelMetric[0] / iDistCnt;
-    #endif
+    /* Return normalized accumulated minimum metric */
+    return pOldTrelMetric[0] / iDistCnt;
 }
 
 void CViterbiDecoder::Init(ECodScheme eNewCodingScheme,

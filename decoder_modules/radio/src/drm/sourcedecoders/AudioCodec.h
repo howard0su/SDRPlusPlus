@@ -50,19 +50,11 @@ public:
     virtual void DecClose() = 0;
 	virtual void DecUpdate(CAudioParam& AudioParam) = 0;
     virtual void Init(const CAudioParam& AudioParam, int iInputBlockSize);
-    /* Encoder */
-	virtual std::string EncGetVersion() = 0;
-	virtual bool CanEncode(CAudioParam::EAudCod eAudioCoding) = 0;
-    virtual bool EncOpen(const CAudioParam& AudioParam, unsigned long& lNumSampEncIn, unsigned long& lMaxBytesEncOut) = 0;
-    virtual int Encode(CVector<_SAMPLE>& vecsEncInData, unsigned long lNumSampEncIn, CVector<uint8_t>& vecsEncOutData, unsigned long lMaxBytesEncOut) = 0;
-	virtual void EncClose() = 0;
-	virtual void EncSetBitrate(int iBitRate) = 0;
-	virtual void EncUpdate(CAudioParam& AudioParam) = 0;
+
 	/* Common */
 	static void InitCodecList();
 	static void UnrefCodecList();
 	static CAudioCodec* GetDecoder(CAudioParam::EAudCod eAudioCoding, bool bCanReturnNullPtr=false);
-	static CAudioCodec* GetEncoder(CAudioParam::EAudCod eAudioCoding, bool bCanReturnNullPtr=false);
     virtual void openFile(const CParameter& Parameters);
     virtual void closeFile();
     virtual void writeFile(const std::vector<uint8_t>& audio_frame);

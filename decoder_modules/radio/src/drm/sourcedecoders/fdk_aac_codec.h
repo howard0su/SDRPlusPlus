@@ -48,21 +48,13 @@ public:
     virtual void DecClose();
 	virtual void DecUpdate(CAudioParam& AudioParam);
     /* Encoder */
-	virtual std::string EncGetVersion();
-	virtual bool CanEncode(CAudioParam::EAudCod eAudioCoding);
-    virtual bool EncOpen(const CAudioParam& AudioParam, unsigned long& lNumSampEncIn, unsigned long& lMaxBytesEncOut);
-    virtual int Encode(CVector<_SAMPLE>&, unsigned long, CVector<uint8_t>&, unsigned long);
-    virtual void EncClose();
-	virtual void EncSetBitrate(int iBitRate);
-	virtual void EncUpdate(CAudioParam& AudioParam);
     virtual void resetFile(std::string) {}
     virtual std::string fileName(const CParameter& Parameters) const;
 protected:
     HANDLE_AACDECODER hDecoder;
-    HANDLE_AACENCODER hEncoder;
     bool bUsac;
     uint16_t last_time;
-    int16_t decode_buf[13840];
+    std::vector<int16_t> decode_buf;
 };
 
 #endif // FDK_AAC_CODEC_H_
